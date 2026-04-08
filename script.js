@@ -28,7 +28,10 @@ const highScores = {
     breakout: parseInt(localStorage.getItem('qu_breakout_best') || 0),
     minesweeper: parseInt(localStorage.getItem('qu_minesweeper_best') || 0),
     flappy: parseInt(localStorage.getItem('qu_flappy_best') || 0),
-    invaders: parseInt(localStorage.getItem('qu_invaders_best') || 0)
+    invaders: parseInt(localStorage.getItem('qu_invaders_best') || 0),
+    pacman: parseInt(localStorage.getItem('qu_pacman_best') || 0),
+    asteroids: parseInt(localStorage.getItem('qu_asteroids_best') || 0),
+    racing: parseInt(localStorage.getItem('qu_racing_best') || 0)
 };
 
 function updateStats() {
@@ -750,6 +753,299 @@ function handleInvadersInput(key) {
 
 
 // ══════════════════════════════════════════════════
+// 🟡 PAC-MAN
+// ══════════════════════════════════════════════════
+const PM_SIZE = 20;
+const PM_COLS = 20, PM_ROWS = 20;
+let pm_grid = [], pm_player = {x:1, y:1, dir:0}, pm_ghosts = [], pm_dots = 0;
+let pm_powerMode = false, pm_powerTimer = 0, pm_mouthAngle = 0.2;
+
+const PM_MAZE = [
+    '####################',
+    '#........##........#',
+    '#.##.###.##.###.##.#',
+    '#O##.###.##.###.##O#',
+    '#..................#',
+    '#.##.##.####.##.##.#',
+    '#....##..##..##....#',
+    '####.###.##.###.####',
+    '   #.##......##.#   ',
+    '####.##.####.##.####',
+    '    ....#  #....    ',
+    '####.##.####.##.####',
+    '   #.##......##.#   ',
+    '####.##.####.##.####',
+    '#........##........#',
+    '#.##.###.##.###.##.#',
+    '#O.#...........#..O#',
+    '##.#.##.####.##.#.##',
+    '#....##..##..##....#',
+    '####################'
+];
+
+function initPacman() {
+    score = 0; level = 1; pm_dots = 0; pm_powerMode = false; pm_powerTimer = 0;
+    pm_grid = PM_MAZE.map(row => row.split(''));
+    pm_player = {x:1, y:1, dir:0};
+    pm_ghosts = [
+        {x:9, y:8, dir:0, color:'#ef4444', mode:'chase'},
+        {x:10, y:8, dir:2, color:'#ec4899', mode:'scatter'},
+        {x:9, y:10, dir:1, color:'#06b6d4', mode:'chase'},
+        {x:10, y:10, dir:3, color:'#f97316', mode:'scatter'}
+    ];
+    pm_grid.forEach(row => row.forEach(c => { if(c==='.'||c==='O') pm_dots++; }));
+}
+
+function updatePacman(dt) {
+    pm_mouthAngle = 0.15 + Math.abs(Math.sin(Date.now()/100)) * 0.35;
+    if (pm_powerMode) { pm_powerTimer -= dt; if(pm_powerTimer <= 0) pm_powerMode = false; }
+    // Move ghosts
+    pm_ghosts.forEach(g => {
+        if (Math.random() < 0.05) g.dir = Math.floor(Math.random() * 4);
+        const dirs = [[1,0],[0,1],[-1,0],[0,-1]];
+        const [dx, dy] = dirs[g.dir];
+        const nx = g.x + dx, ny = g.y + dy;
+        if (nx >= 0 && nx < PM_COLS && ny >= 0 && ny < PM_ROWS && pm_grid[ny] && pm_grid[ny][nx] !== '#') {
+            g.x = nx; g.y = ny;
+        } else { g.dir = Math.floor(Math.random() * 4); }
+    });
+    // Check ghost collision
+    pm_ghosts.forEach(g => {
+        if (g.x === pm_player.x && g.y === pm_player.y) {
+            if (pm_powerMode) { g.x = 9; g.y = 8; score += 200; updateStats(); }
+            else { showGameOver(); }
+        }
+    });
+    // Check dots
+    const cell = pm_grid[pm_player.y] && pm_grid[pm_player.y][pm_player.x];
+    if (cell === '.') { pm_grid[pm_player.y][pm_player.x] = ' '; score += 10; pm_dots--; updateStats(); }
+    if (cell === 'O') { pm_grid[pm_player.y][pm_player.x] = ' '; score += 50; pm_dots--; pm_powerMode = true; pm_powerTimer = 5000; updateStats(); }
+    if (pm_dots <= 0) { level++; initPacman(); }
+}
+
+function drawPacman() {
+    ctx.fillStyle = '#0a0a14'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    // Draw maze
+    for (let y = 0; y < PM_ROWS; y++) for (let x = 0; x < PM_COLS; x++) {
+        const c = pm_grid[y] && pm_grid[y][x];
+        const px = x * PM_SIZE, py = y * PM_SIZE;
+        if (c === '#') { ctx.fillStyle = '#1e3a8a'; ctx.fillRect(px+1, py+1, PM_SIZE-2, PM_SIZE-2); }
+        else if (c === '.') { ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(px+PM_SIZE/2, py+PM_SIZE/2, 2, 0, Math.PI*2); ctx.fill(); }
+        else if (c === 'O') { ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(px+PM_SIZE/2, py+PM_SIZE/2, 5, 0, Math.PI*2); ctx.fill(); }
+    }
+    // Player
+    const ppx = pm_player.x * PM_SIZE + PM_SIZE/2, ppy = pm_player.y * PM_SIZE + PM_SIZE/2;
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    const angles = [0, Math.PI/2, Math.PI, 3*Math.PI/2];
+    const base = angles[pm_player.dir] || 0;
+    ctx.arc(ppx, ppy, PM_SIZE/2 - 1, base + pm_mouthAngle, base + Math.PI*2 - pm_mouthAngle);
+    ctx.lineTo(ppx, ppy);
+    ctx.fill();
+    // Ghosts
+    pm_ghosts.forEach(g => {
+        const gx = g.x * PM_SIZE, gy = g.y * PM_SIZE;
+        ctx.fillStyle = pm_powerMode ? '#3b82f6' : g.color;
+        ctx.beginPath();
+        ctx.arc(gx + PM_SIZE/2, gy + PM_SIZE/3, PM_SIZE/2 - 2, Math.PI, 0);
+        ctx.lineTo(gx + PM_SIZE - 2, gy + PM_SIZE - 2);
+        for (let w = 0; w < 3; w++) ctx.lineTo(gx + PM_SIZE - 2 - (w+1)*(PM_SIZE-4)/3, gy + PM_SIZE - 6 + (w%2)*4);
+        ctx.lineTo(gx + 2, gy + PM_SIZE - 2);
+        ctx.fill();
+        // Eyes
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(gx+PM_SIZE/3, gy+PM_SIZE/3, 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(gx+2*PM_SIZE/3, gy+PM_SIZE/3, 3, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.arc(gx+PM_SIZE/3+1, gy+PM_SIZE/3, 1.5, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(gx+2*PM_SIZE/3+1, gy+PM_SIZE/3, 1.5, 0, Math.PI*2); ctx.fill();
+    });
+}
+
+function handlePacmanInput(key) {
+    const dirs = {ArrowRight:[1,0,0],d:[1,0,0],ArrowDown:[0,1,1],s:[0,1,1],ArrowLeft:[-1,0,2],a:[-1,0,2],ArrowUp:[0,-1,3],w:[0,-1,3]};
+    const d = dirs[key]; if (!d) return;
+    const nx = pm_player.x + d[0], ny = pm_player.y + d[1];
+    if (nx >= 0 && nx < PM_COLS && ny >= 0 && ny < PM_ROWS && pm_grid[ny] && pm_grid[ny][nx] !== '#') {
+        pm_player.x = nx; pm_player.y = ny; pm_player.dir = d[2];
+    }
+}
+
+// ══════════════════════════════════════════════════
+// ☄️ ASTEROIDS
+// ══════════════════════════════════════════════════
+let ast_ship = {x:200, y:200, angle:0, vx:0, vy:0};
+let ast_rocks = [], ast_bullets = [], ast_particles = [];
+
+function initAsteroids() {
+    score = 0; level = 1;
+    ast_ship = {x:200, y:200, angle:-Math.PI/2, vx:0, vy:0};
+    ast_bullets = []; ast_particles = [];
+    ast_rocks = [];
+    for (let i = 0; i < 5; i++) {
+        ast_rocks.push(makeRock(Math.random()*400, Math.random()*400, 30));
+    }
+}
+
+function makeRock(x, y, r) {
+    const pts = []; const n = 8 + Math.floor(Math.random()*5);
+    for (let i = 0; i < n; i++) { const a = (i/n)*Math.PI*2; pts.push({x: Math.cos(a)*(r*0.7+Math.random()*r*0.3), y: Math.sin(a)*(r*0.7+Math.random()*r*0.3)}); }
+    return {x, y, r, pts, vx:(Math.random()-0.5)*2, vy:(Math.random()-0.5)*2, spin: (Math.random()-0.5)*0.02, angle:0};
+}
+
+function updateAsteroids(dt) {
+    // Ship physics
+    ast_ship.x = (ast_ship.x + ast_ship.vx + 400) % 400;
+    ast_ship.y = (ast_ship.y + ast_ship.vy + 400) % 400;
+    ast_ship.vx *= 0.99; ast_ship.vy *= 0.99;
+    // Bullets
+    for (let i = ast_bullets.length - 1; i >= 0; i--) {
+        ast_bullets[i].x += ast_bullets[i].vx; ast_bullets[i].y += ast_bullets[i].vy; ast_bullets[i].life--;
+        if (ast_bullets[i].life <= 0) { ast_bullets.splice(i, 1); continue; }
+        // Hit test
+        for (let j = ast_rocks.length - 1; j >= 0; j--) {
+            const dx = ast_bullets[i].x - ast_rocks[j].x, dy = ast_bullets[i].y - ast_rocks[j].y;
+            if (Math.sqrt(dx*dx+dy*dy) < ast_rocks[j].r) {
+                // Particle burst
+                for (let p = 0; p < 8; p++) { const a = Math.random()*Math.PI*2; ast_particles.push({x:ast_rocks[j].x,y:ast_rocks[j].y,vx:Math.cos(a)*2,vy:Math.sin(a)*2,life:30}); }
+                if (ast_rocks[j].r > 15) { ast_rocks.push(makeRock(ast_rocks[j].x, ast_rocks[j].y, ast_rocks[j].r * 0.6)); ast_rocks.push(makeRock(ast_rocks[j].x, ast_rocks[j].y, ast_rocks[j].r * 0.6)); }
+                ast_rocks.splice(j, 1); ast_bullets.splice(i, 1); score += 25; updateStats(); break;
+            }
+        }
+    }
+    // Rocks
+    ast_rocks.forEach(r => { r.x=(r.x+r.vx+400)%400; r.y=(r.y+r.vy+400)%400; r.angle+=r.spin; });
+    // Ship collision
+    ast_rocks.forEach(r => { const dx=ast_ship.x-r.x, dy=ast_ship.y-r.y; if(Math.sqrt(dx*dx+dy*dy)<r.r+8) showGameOver(); });
+    // Particles
+    for (let i = ast_particles.length - 1; i >= 0; i--) { ast_particles[i].x+=ast_particles[i].vx; ast_particles[i].y+=ast_particles[i].vy; ast_particles[i].life--; if(ast_particles[i].life<=0) ast_particles.splice(i,1); }
+    // Win level
+    if (ast_rocks.length === 0) { level++; for (let i = 0; i < 4 + level; i++) ast_rocks.push(makeRock(Math.random()*400, Math.random()*400, 25+level*3)); score += level*100; updateStats(); }
+}
+
+function drawAsteroids() {
+    ctx.fillStyle = '#050510'; ctx.fillRect(0,0,400,400);
+    // Stars
+    ctx.fillStyle = 'rgba(255,255,255,0.4)'; for (let i=0;i<40;i++) ctx.fillRect((i*97)%400,(i*53+i*7)%400,1,1);
+    // Rocks
+    ast_rocks.forEach(r => {
+        ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.angle);
+        ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 1.5; ctx.beginPath();
+        r.pts.forEach((p, i) => { if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
+        ctx.closePath(); ctx.stroke(); ctx.restore();
+    });
+    // Ship
+    ctx.save(); ctx.translate(ast_ship.x, ast_ship.y); ctx.rotate(ast_ship.angle);
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.moveTo(12, 0); ctx.lineTo(-8, -7); ctx.lineTo(-5, 0); ctx.lineTo(-8, 7); ctx.closePath(); ctx.stroke();
+    // Thrust flame
+    if (ast_ship._thrust) { ctx.fillStyle = '#f97316'; ctx.beginPath(); ctx.moveTo(-5, -3); ctx.lineTo(-12-Math.random()*5, 0); ctx.lineTo(-5, 3); ctx.fill(); }
+    ctx.restore();
+    // Bullets
+    ctx.fillStyle = '#facc15';
+    ast_bullets.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, 2, 0, Math.PI*2); ctx.fill(); });
+    // Particles
+    ast_particles.forEach(p => { ctx.fillStyle = `rgba(249,115,22,${p.life/30})`; ctx.fillRect(p.x, p.y, 2, 2); });
+}
+
+let ast_keys = {};
+function handleAsteroidsInput(key) {
+    if (key === 'ArrowLeft' || key === 'a') ast_ship.angle -= 0.15;
+    if (key === 'ArrowRight' || key === 'd') ast_ship.angle += 0.15;
+    if (key === 'ArrowUp' || key === 'w') {
+        ast_ship.vx += Math.cos(ast_ship.angle) * 0.3;
+        ast_ship.vy += Math.sin(ast_ship.angle) * 0.3;
+        ast_ship._thrust = true; setTimeout(() => { ast_ship._thrust = false; }, 100);
+    }
+    if (key === ' ') {
+        ast_bullets.push({x:ast_ship.x+Math.cos(ast_ship.angle)*12, y:ast_ship.y+Math.sin(ast_ship.angle)*12, vx:Math.cos(ast_ship.angle)*6, vy:Math.sin(ast_ship.angle)*6, life:60});
+    }
+}
+
+// ══════════════════════════════════════════════════
+// 🏎️ RACING
+// ══════════════════════════════════════════════════
+let rc_player = {x:200, lane:1};
+let rc_cars = [], rc_road = [], rc_speed = 3, rc_dist = 0;
+
+function initRacing() {
+    score = 0; level = 1; rc_speed = 3; rc_dist = 0;
+    rc_player = {x:200, lane:1};
+    rc_cars = []; rc_road = [];
+    for (let i = 0; i < 400; i += 20) rc_road.push({y: i, curve: 0});
+}
+
+function updateRacing(dt) {
+    rc_dist += rc_speed;
+    score = Math.floor(rc_dist / 10);
+    rc_speed = 3 + Math.floor(rc_dist / 500) * 0.5;
+    level = Math.floor(rc_dist / 1000) + 1;
+    updateStats();
+    // Spawn opponent cars
+    if (Math.random() < 0.03) {
+        const lane = Math.floor(Math.random() * 3);
+        const colors = ['#ef4444','#3b82f6','#10b981','#f59e0b','#8b5cf6'];
+        rc_cars.push({x: 110 + lane * 60 + 20, y: -40, w: 30, h: 50, color: colors[Math.floor(Math.random()*colors.length)]});
+    }
+    // Move opponents
+    for (let i = rc_cars.length - 1; i >= 0; i--) {
+        rc_cars[i].y += rc_speed;
+        if (rc_cars[i].y > 440) { rc_cars.splice(i, 1); continue; }
+        // Collision
+        const px = 110 + rc_player.lane * 60 + 5, py = 320;
+        if (rc_cars[i].y + rc_cars[i].h > py && rc_cars[i].y < py + 50 &&
+            rc_cars[i].x + rc_cars[i].w > px && rc_cars[i].x < px + 30) {
+            showGameOver(); return;
+        }
+    }
+}
+
+function drawRacing() {
+    // Sky
+    const skyGrad = ctx.createLinearGradient(0,0,0,400);
+    skyGrad.addColorStop(0,'#1a1a2e'); skyGrad.addColorStop(1,'#16213e');
+    ctx.fillStyle = skyGrad; ctx.fillRect(0,0,400,400);
+    // Road
+    ctx.fillStyle = '#2a2a3a'; ctx.fillRect(100, 0, 200, 400);
+    // Lane markings
+    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2; ctx.setLineDash([20, 15]);
+    ctx.lineDashOffset = -(rc_dist % 35);
+    ctx.beginPath(); ctx.moveTo(160, 0); ctx.lineTo(160, 400); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(230, 0); ctx.lineTo(230, 400); ctx.stroke();
+    ctx.setLineDash([]);
+    // Road edges
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(100, 0); ctx.lineTo(100, 400); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(300, 0); ctx.lineTo(300, 400); ctx.stroke();
+    // Opponents
+    rc_cars.forEach(c => {
+        ctx.fillStyle = c.color;
+        ctx.beginPath();
+        ctx.roundRect(c.x, c.y, c.w, c.h, 5);
+        ctx.fill();
+        // Windshield
+        ctx.fillStyle = '#1e293b'; ctx.fillRect(c.x+4, c.y+5, c.w-8, 12);
+        // Tail lights
+        ctx.fillStyle = '#ef4444'; ctx.fillRect(c.x+2, c.y+c.h-6, 6, 4); ctx.fillRect(c.x+c.w-8, c.y+c.h-6, 6, 4);
+    });
+    // Player car
+    const px = 110 + rc_player.lane * 60 + 5, py = 320;
+    ctx.fillStyle = '#6366f1';
+    ctx.beginPath(); ctx.roundRect(px, py, 30, 50, 5); ctx.fill();
+    ctx.fillStyle = '#1e293b'; ctx.fillRect(px+4, py+5, 22, 12);
+    ctx.fillStyle = '#facc15'; ctx.fillRect(px+2, py-4, 6, 4); ctx.fillRect(px+22, py-4, 6, 4);
+    // Speed indicator
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px JetBrains Mono'; ctx.textAlign = 'left';
+    ctx.fillText(`${Math.floor(rc_speed*30)} km/h`, 10, 20);
+    ctx.fillText(`Dist: ${score}m`, 10, 38);
+}
+
+function handleRacingInput(key) {
+    if ((key === 'ArrowLeft' || key === 'a') && rc_player.lane > 0) rc_player.lane--;
+    if ((key === 'ArrowRight' || key === 'd') && rc_player.lane < 2) rc_player.lane++;
+}
+
+// ══════════════════════════════════════════════════
 
 function loop(timestamp) {
     if (gameState !== STATES.PLAYING) return;
@@ -776,6 +1072,15 @@ function loop(timestamp) {
     } else if (currentGame === 'invaders') {
         updateInvaders(dt);
         if (gameState === STATES.PLAYING) drawInvaders();
+    } else if (currentGame === 'pacman') {
+        updatePacman(dt);
+        if (gameState === STATES.PLAYING) drawPacman();
+    } else if (currentGame === 'asteroids') {
+        updateAsteroids(dt);
+        if (gameState === STATES.PLAYING) drawAsteroids();
+    } else if (currentGame === 'racing') {
+        updateRacing(dt);
+        if (gameState === STATES.PLAYING) drawRacing();
     }
     
     if (gameState === STATES.PLAYING) {
@@ -817,6 +1122,9 @@ $('#startGameBtn').addEventListener('click', () => {
         else if (currentGame === 'minesweeper') initMinesweeper();
         else if (currentGame === 'flappy') initFlappy();
         else if (currentGame === 'invaders') initInvaders();
+        else if (currentGame === 'pacman') initPacman();
+        else if (currentGame === 'asteroids') initAsteroids();
+        else if (currentGame === 'racing') initRacing();
     }
     
     gameState = STATES.PLAYING;
@@ -856,6 +1164,9 @@ document.addEventListener('keydown', e => {
     else if (currentGame === 'breakout') handleBreakoutInput(e.key);
     else if (currentGame === 'flappy') handleFlappyInput(e.key);
     else if (currentGame === 'invaders') handleInvadersInput(e.key);
+    else if (currentGame === 'pacman') handlePacmanInput(e.key);
+    else if (currentGame === 'asteroids') handleAsteroidsInput(e.key);
+    else if (currentGame === 'racing') handleRacingInput(e.key);
 });
 
 // Touch controls via buttons
@@ -879,6 +1190,9 @@ $$('.dpad-btn').forEach(btn => {
         else if (currentGame === 'breakout') handleBreakoutInput(key);
         else if (currentGame === 'flappy') handleFlappyInput(key);
         else if (currentGame === 'invaders') handleInvadersInput(key);
+        else if (currentGame === 'pacman') handlePacmanInput(key);
+        else if (currentGame === 'asteroids') handleAsteroidsInput(key);
+        else if (currentGame === 'racing') handleRacingInput(key);
     });
 });
 
