@@ -21,26 +21,27 @@ let animFrame;
 let lastTime = 0;
 
 // High scores from localStorage
+let getLs = (k) => { try { return parseInt(localStorage.getItem(k) || 0) || 0; } catch(e){return 0;} };
 const highScores = {
-    snake: parseInt(localStorage.getItem('qu_snake_best') || 0),
-    tetris: parseInt(localStorage.getItem('qu_tetris_best') || 0),
-    2048: parseInt(localStorage.getItem('qu_2048_best') || 0),
-    breakout: parseInt(localStorage.getItem('qu_breakout_best') || 0),
-    minesweeper: parseInt(localStorage.getItem('qu_minesweeper_best') || 0),
-    flappy: parseInt(localStorage.getItem('qu_flappy_best') || 0),
-    invaders: parseInt(localStorage.getItem('qu_invaders_best') || 0),
-    pacman: parseInt(localStorage.getItem('qu_pacman_best') || 0),
-    asteroids: parseInt(localStorage.getItem('qu_asteroids_best') || 0),
-    racing: parseInt(localStorage.getItem('qu_racing_best') || 0)
+    snake: getLs('qu_snake_best'),
+    tetris: getLs('qu_tetris_best'),
+    2048: getLs('qu_2048_best'),
+    breakout: getLs('qu_breakout_best'),
+    minesweeper: getLs('qu_minesweeper_best'),
+    flappy: getLs('qu_flappy_best'),
+    invaders: getLs('qu_invaders_best'),
+    pacman: getLs('qu_pacman_best'),
+    asteroids: getLs('qu_asteroids_best'),
+    racing: getLs('qu_racing_best')
 };
 
 function updateStats() {
     scoreEl.textContent = score;
-    bestEl.textContent = highScores[currentGame];
+    bestEl.textContent = highScores[currentGame] || 0;
     levelEl.textContent = level;
-    if (score > highScores[currentGame]) {
+    if (score > (highScores[currentGame] || 0)) {
         highScores[currentGame] = score;
-        localStorage.setItem(`qu_${currentGame}_best`, score);
+        try { localStorage.setItem(`qu_${currentGame}_best`, score); } catch(e){}
         bestEl.textContent = score;
     }
 }
