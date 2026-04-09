@@ -1106,9 +1106,26 @@ $$('.game-card').forEach(card => {
         ctx.fillStyle = '#888';
         ctx.font = '16px Inter, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(`Press Start to play ${currentGame.toUpperCase()}`, canvas.width/2, canvas.height/2);
+        ctx.fillText(`Starting ${currentGame.toUpperCase()}...`, canvas.width/2, canvas.height/2);
         
         updateStats(); // Shows high score for selected game
+
+        // Auto-start the game immediately
+        if (currentGame === 'snake') initSnake();
+        else if (currentGame === 'tetris') initTetris();
+        else if (currentGame === '2048') init2048();
+        else if (currentGame === 'breakout') initBreakout();
+        else if (currentGame === 'minesweeper') initMinesweeper();
+        else if (currentGame === 'flappy') initFlappy();
+        else if (currentGame === 'invaders') initInvaders();
+        else if (currentGame === 'pacman') initPacman();
+        else if (currentGame === 'asteroids') initAsteroids();
+        else if (currentGame === 'racing') initRacing();
+        
+        gameState = STATES.PLAYING;
+        $('#startGameBtn').textContent = '▶ Restart';
+        lastTime = performance.now();
+        animFrame = requestAnimationFrame(loop);
     });
 });
 
