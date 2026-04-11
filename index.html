@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Games — 10 Classic Arcade Games | QuickUtils</title>
-    <meta name="description" content="Play 10 classic retro games: Snake, Tetris, 2048, Breakout, Minesweeper, Flappy Bird, Space Invaders, Pac-Man, Asteroids, and Racing. Mobile-friendly with high scores.">
+    <title>Retro Games — Snake, Tetris & 2048 | QuickUtils</title>
+    <meta name="description" content="Play classic retro games: Snake, Tetris, and 2048 all in one place. Mobile-friendly with high scores.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -22,7 +22,7 @@
 
     <section class="hero">
         <h1><span class="gradient-text">Retro Games</span></h1>
-        <p class="hero-sub">10 classic games, modern design. Pick a game and start playing!</p>
+        <p class="hero-sub">Classic games, modern design. Play Snake, Tetris, or 2048!</p>
     </section>
     <div class="game-selector" id="gameSelector">
         <div class="game-card active" data-game="snake"><div class="game-emoji">🐍</div><div class="game-name">Snake</div><div class="game-desc">Eat food, grow longer!</div></div>
@@ -35,12 +35,12 @@
         <div class="game-card" data-game="pacman"><div class="game-emoji">🟡</div><div class="game-name">Pac-Man</div><div class="game-desc">Eat dots, dodge ghosts!</div></div>
         <div class="game-card" data-game="asteroids"><div class="game-emoji">☄️</div><div class="game-name">Asteroids</div><div class="game-desc">Blast rocks in space!</div></div>
         <div class="game-card" data-game="racing"><div class="game-emoji">🏎️</div><div class="game-name">Racing</div><div class="game-desc">Dodge traffic!</div></div>
-            <div class="game-card" data-game="neonracer"><div class="game-emoji">🏎️</div><div class="game-name">Neon Racer</div><div class="game-desc">Aesthetic racing in 80s synthwave</div></div>
+        <div class="game-card" data-game="neonracer"><div class="game-emoji">🏎️</div><div class="game-name">Neon Racer</div><div class="game-desc">Aesthetic racing in 80s synthwave</div></div>
         <div class="game-card" data-game="defender"><div class="game-emoji">🚀</div><div class="game-name">Defender</div><div class="game-desc">Twin-stick shooter survival</div></div>
         <div class="game-card" data-game="hexagon"><div class="game-emoji">🛑</div><div class="game-name">Hexagon</div><div class="game-desc">Avoid the shrinking walls!</div></div>
         <div class="game-card" data-game="lander"><div class="game-emoji">🌑</div><div class="game-name">Lander</div><div class="game-desc">Land the module carefully.</div></div>
         <div class="game-card" data-game="pinball"><div class="game-emoji">⚡</div><div class="game-name">Pinball</div><div class="game-desc">Bounce bumpers & score big.</div></div>
-            <div class="game-card" data-game="driftking"><div class="game-emoji">💨</div><div class="game-name">Drift King</div><div class="game-desc">Drift race your car!</div></div>
+        <div class="game-card" data-game="driftking"><div class="game-emoji">💨</div><div class="game-name">Drift King</div><div class="game-desc">Drift race your car!</div></div>
         <div class="game-card" data-game="chopper"><div class="game-emoji">🚁</div><div class="game-name">Chopper</div><div class="game-desc">Fly through the cave</div></div>
         <div class="game-card" data-game="pong"><div class="game-emoji">🏓</div><div class="game-name">Pong</div><div class="game-desc">Neon Pong AI challenge</div></div>
         <div class="game-card" data-game="shooter"><div class="game-emoji">👽</div><div class="game-name">Shooter</div><div class="game-desc">Shoot alien invaders</div></div>
@@ -50,7 +50,12 @@
         <div class="game-card" data-game="snake2"><div class="game-emoji">🐍</div><div class="game-name">Snake 2</div><div class="game-desc">Obstacle classic snake</div></div>
         <div class="game-card" data-game="sudoku"><div class="game-emoji">🔢</div><div class="game-name">Sudoku</div><div class="game-desc">Easy clicker sudoku</div></div>
         <div class="game-card" data-game="mazeescape"><div class="game-emoji">🏃</div><div class="game-name">Maze Run</div><div class="game-desc">Escape the proced. maze</div></div>
-</div>
+        <div class="game-card" data-game="towerdefense"><div class="game-emoji">🎯</div><div class="game-name">Tower Defense</div><div class="game-desc">Space to place towers!</div></div>
+        <div class="game-card" data-game="bounceball"><div class="game-emoji">🔵</div><div class="game-name">Bounce Ball</div><div class="game-desc">Break all the blocks!</div></div>
+        <div class="game-card" data-game="frogger"><div class="game-emoji">🐸</div><div class="game-name">Frogger</div><div class="game-desc">Cross the road safely!</div></div>
+        <div class="game-card" data-game="gemcollector"><div class="game-emoji">💎</div><div class="game-name">Gem Collector</div><div class="game-desc">Catch gems, dodge bombs!</div></div>
+        <div class="game-card" data-game="runner"><div class="game-emoji">🏃</div><div class="game-name">Endless Runner</div><div class="game-desc">Jump over obstacles!</div></div>
+    </div>
     <section class="glass-card game-area" id="gameArea">
         <div class="game-stats">
             <span>Score: <strong id="gameScore">0</strong></span>
@@ -80,4 +85,3 @@
 <script src="script.js"></script>
 </body>
 </html>
-<!-- redeploy trigger -->

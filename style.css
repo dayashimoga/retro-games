@@ -48,14 +48,14 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 
 @media(max-width:768px){.nav-links{display:none}}
 
 
-.game-selector{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.75rem;margin-bottom:1.5rem}
+.game-selector{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
 .game-card{padding:1.5rem;background:var(--bg-card);border:2px solid var(--border);border-radius:var(--radius);cursor:pointer;text-align:center;transition:all 0.3s}
 .game-card:hover,.game-card.active{border-color:var(--accent);transform:translateY(-4px);box-shadow:0 8px 32px var(--accent-glow)}
 .game-card .game-emoji{font-size:2.5rem;margin-bottom:0.5rem}
 .game-card .game-name{font-weight:700;font-size:1.1rem}
 .game-card .game-desc{font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem}
 .game-area{display:flex;flex-direction:column;align-items:center}
-.game-canvas{background:var(--bg-surface);border:2px solid var(--border);border-radius:8px;display:block;width:100%;max-width:600px;height:auto;aspect-ratio:1/1;}
+.game-canvas{background:var(--bg-surface);border:2px solid var(--border);border-radius:8px;display:block}
 .game-controls{display:flex;gap:0.5rem;margin-top:1rem;flex-wrap:wrap;justify-content:center}
 .game-stats{display:flex;gap:2rem;margin:1rem 0;font-family:var(--mono)}
 .game-stats span{font-size:0.85rem;color:var(--text-muted)}

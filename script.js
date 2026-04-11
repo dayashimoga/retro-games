@@ -15,6 +15,20 @@ const scoreEl = $('#gameScore');
 const bestEl = $('#gameBest');
 const levelEl = $('#gameLevel');
 
+// Dynamic canvas sizing — games draw at 400x400 logical, canvas scales to fill
+const GAME_W = 400, GAME_H = 400;
+function resizeCanvas() {
+    const parent = canvas.parentElement;
+    const maxW = Math.min(parent.clientWidth, window.innerHeight - 250);
+    const size = Math.max(300, maxW);
+    canvas.style.width = size + 'px';
+    canvas.style.height = size + 'px';
+    canvas.width = GAME_W;
+    canvas.height = GAME_H;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
 let score = 0;
 let level = 1;
 let animFrame;
@@ -1418,6 +1432,106 @@ function handleMazeescapeInput(k) {
     if(mz_g[mz_p.y][mz_p.x]===2) { score+=50; updateStats(); initMazeescape(); }
 }
 
+
+// ══════════════════════════════════════════════════
+// 🎯 TOWER DEFENSE
+// ══════════════════════════════════════════════════
+let td_enemies=[],td_towers=[],td_wave=0,td_hp=10,td_gold=50;
+function initTowerdefense(){td_enemies=[];td_towers=[];td_wave=0;td_hp=10;td_gold=50;score=0;spawnWave();}
+function spawnWave(){td_wave++;for(let i=0;i<td_wave*3;i++)td_enemies.push({x:-20-i*30,y:200,hp:2+td_wave,speed:1+td_wave*0.2});}
+function updateTowerdefense(){
+    td_enemies.forEach(e=>{e.x+=e.speed;if(e.x>400){td_hp--;e.x=-999;}});
+    td_enemies=td_enemies.filter(e=>e.hp>0&&e.x>-100);
+    td_towers.forEach(t=>{td_enemies.forEach(e=>{if(Math.hypot(t.x-e.x,t.y-e.y)<80){e.hp-=0.05;if(e.hp<=0){score+=10;td_gold+=5;updateStats();}}});});
+    if(td_enemies.length===0)spawnWave();
+    if(td_hp<=0)showGameOver();
+}
+function drawTowerdefense(){
+    ctx.fillStyle='#1a1a2e';ctx.fillRect(0,0,400,400);
+    ctx.fillStyle='#333';ctx.fillRect(0,190,400,20);
+    td_towers.forEach(t=>{ctx.fillStyle='#3b82f6';ctx.fillRect(t.x-8,t.y-8,16,16);ctx.strokeStyle='rgba(59,130,246,0.3)';ctx.beginPath();ctx.arc(t.x,t.y,80,0,Math.PI*2);ctx.stroke();});
+    td_enemies.forEach(e=>{ctx.fillStyle='#ef4444';ctx.fillRect(e.x-6,e.y-6,12,12);});
+    ctx.fillStyle='#fff';ctx.font='12px Inter';ctx.fillText('HP:'+td_hp+' Gold:'+td_gold+' Wave:'+td_wave,10,15);
+}
+function handleTowerdefenseInput(k){if(k===' '&&td_gold>=20){td_towers.push({x:200,y:100+Math.random()*200});td_gold-=20;}}
+
+// ══════════════════════════════════════════════════
+// 🔵 BOUNCE BALL
+// ══════════════════════════════════════════════════
+let bb2_ball={x:200,y:200,vx:3,vy:-3},bb2_blocks=[];
+function initBounceball(){bb2_ball={x:200,y:350,vx:3,vy:-3};bb2_blocks=[];score=0;for(let r=0;r<6;r++)for(let c=0;c<10;c++)bb2_blocks.push({x:c*40,y:r*15+20,alive:true,color:'hsl('+(r*60)+',70%,60%)'});}
+function updateBounceball(){
+    bb2_ball.x+=bb2_ball.vx;bb2_ball.y+=bb2_ball.vy;
+    if(bb2_ball.x<5||bb2_ball.x>395)bb2_ball.vx*=-1;
+    if(bb2_ball.y<5)bb2_ball.vy*=-1;
+    if(bb2_ball.y>400)showGameOver();
+    bb2_blocks.forEach(b=>{if(b.alive&&bb2_ball.x>b.x&&bb2_ball.x<b.x+38&&bb2_ball.y>b.y&&bb2_ball.y<b.y+13){b.alive=false;bb2_ball.vy*=-1;score+=10;updateStats();}});
+}
+function drawBounceball(){
+    ctx.fillStyle='#111';ctx.fillRect(0,0,400,400);
+    bb2_blocks.forEach(b=>{if(b.alive){ctx.fillStyle=b.color;ctx.fillRect(b.x+1,b.y+1,38,13);}});
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(bb2_ball.x,bb2_ball.y,5,0,Math.PI*2);ctx.fill();
+}
+function handleBounceballInput(k){if(k==='ArrowLeft')bb2_ball.vx=-Math.abs(bb2_ball.vx);if(k==='ArrowRight')bb2_ball.vx=Math.abs(bb2_ball.vx);}
+
+// ══════════════════════════════════════════════════
+// 🐸 FROGGER
+// ══════════════════════════════════════════════════
+let fg_y=380,fg_x=200,fg_cars=[];
+function initFrogger(){fg_y=380;fg_x=200;score=0;fg_cars=[];for(let r=0;r<5;r++)for(let i=0;i<3;i++)fg_cars.push({x:i*140,y:80+r*60,speed:(r%2===0?2:-2)*(1+r*0.3),w:50});}
+function updateFrogger(){
+    fg_cars.forEach(c=>{c.x+=c.speed;if(c.x>420)c.x=-60;if(c.x<-60)c.x=420;
+        if(fg_y>c.y-10&&fg_y<c.y+20&&fg_x>c.x&&fg_x<c.x+c.w)showGameOver();
+    });
+}
+function drawFrogger(){
+    ctx.fillStyle='#1a3300';ctx.fillRect(0,0,400,400);
+    ctx.fillStyle='#333';ctx.fillRect(0,60,400,320);
+    ctx.fillStyle='#1a3300';ctx.fillRect(0,0,400,60);ctx.fillRect(0,370,400,30);
+    fg_cars.forEach(c=>{ctx.fillStyle='#ef4444';ctx.fillRect(c.x,c.y,c.w,20);});
+    ctx.fillStyle='#22c55e';ctx.fillRect(fg_x-8,fg_y-8,16,16);
+    if(fg_y<60){score+=100;updateStats();fg_y=380;fg_x=200;}
+}
+function handleFroggerInput(k){if(k==='ArrowUp')fg_y-=20;if(k==='ArrowDown')fg_y+=20;if(k==='ArrowLeft')fg_x-=20;if(k==='ArrowRight')fg_x+=20;}
+
+// ══════════════════════════════════════════════════
+// 💎 GEM COLLECTOR
+// ══════════════════════════════════════════════════
+let gc_x=200,gc_gems=[],gc_bombs=[];
+function initGemcollector(){gc_x=200;gc_gems=[];gc_bombs=[];score=0;for(let i=0;i<5;i++)gc_gems.push({x:Math.random()*380,y:Math.random()*-400,speed:2+Math.random()*2});}
+function updateGemcollector(){
+    gc_gems.forEach(g=>{g.y+=g.speed;if(g.y>400){g.y=-20;g.x=Math.random()*380;}if(Math.abs(g.x-gc_x)<15&&g.y>370){score+=10;updateStats();g.y=-20;g.x=Math.random()*380;if(Math.random()<0.3)gc_bombs.push({x:Math.random()*380,y:-20,speed:3});}});
+    gc_bombs.forEach(b=>{b.y+=b.speed;if(Math.abs(b.x-gc_x)<15&&b.y>370)showGameOver();});
+    gc_bombs=gc_bombs.filter(b=>b.y<420);
+}
+function drawGemcollector(){
+    ctx.fillStyle='#0a0a1a';ctx.fillRect(0,0,400,400);
+    ctx.fillStyle='#22c55e';ctx.fillRect(gc_x-10,380,20,15);
+    gc_gems.forEach(g=>{ctx.fillStyle='#facc15';ctx.beginPath();ctx.moveTo(g.x,g.y-8);ctx.lineTo(g.x+8,g.y);ctx.lineTo(g.x,g.y+8);ctx.lineTo(g.x-8,g.y);ctx.fill();});
+    gc_bombs.forEach(b=>{ctx.fillStyle='#ef4444';ctx.beginPath();ctx.arc(b.x,b.y,6,0,Math.PI*2);ctx.fill();});
+}
+function handleGemcollectorInput(k){if(k==='ArrowLeft')gc_x=Math.max(10,gc_x-15);if(k==='ArrowRight')gc_x=Math.min(390,gc_x+15);}
+
+// ══════════════════════════════════════════════════
+// 🏃 ENDLESS RUNNER
+// ══════════════════════════════════════════════════
+let er_y=300,er_vy=0,er_obs=[],er_grounded=true,er_dist=0;
+function initRunner(){er_y=300;er_vy=0;er_obs=[];er_grounded=true;er_dist=0;score=0;}
+function updateRunner(){
+    er_dist+=4;score=Math.floor(er_dist/10);updateStats();
+    er_vy+=0.5;er_y+=er_vy;if(er_y>=300){er_y=300;er_vy=0;er_grounded=true;}
+    if(Math.random()<0.03)er_obs.push({x:420,w:15+Math.random()*15,h:20+Math.random()*20});
+    er_obs.forEach(o=>{o.x-=4;if(o.x>50&&o.x<70&&er_y+20>400-o.h)showGameOver();});
+    er_obs=er_obs.filter(o=>o.x>-30);
+}
+function drawRunner(){
+    ctx.fillStyle='#1a1a2e';ctx.fillRect(0,0,400,400);
+    ctx.fillStyle='#333';ctx.fillRect(0,320,400,80);
+    ctx.fillStyle='#6366f1';ctx.fillRect(55,er_y,15,20);
+    ctx.fillStyle='#ef4444';er_obs.forEach(o=>ctx.fillRect(o.x,320-o.h,o.w,o.h));
+}
+function handleRunnerInput(k){if((k==='ArrowUp'||k===' ')&&er_grounded){er_vy=-10;er_grounded=false;}}
+
 function loop(timestamp) {
     if (gameState !== STATES.PLAYING) return;
     
@@ -1458,8 +1572,23 @@ function loop(timestamp) {
     } else if (currentGame === 'lander') { updateLander(dt); if (gameState === STATES.PLAYING) drawLander();
     } else if (currentGame === 'hexagon') { updateHexagon(dt); if (gameState === STATES.PLAYING) drawHexagon();
     } else if (currentGame === 'pinball') { updatePinball(dt); if (gameState === STATES.PLAYING) drawPinball();
+    } else if (currentGame === 'driftking') { updateDriftking(dt); if (gameState === STATES.PLAYING) drawDriftking();
+    } else if (currentGame === 'chopper') { updateChopper(dt); if (gameState === STATES.PLAYING) drawChopper();
+    } else if (currentGame === 'pong') { updatePong(dt); if (gameState === STATES.PLAYING) drawPong();
+    } else if (currentGame === 'shooter') { updateShooter(dt); if (gameState === STATES.PLAYING) drawShooter();
+    } else if (currentGame === 'platformer') { updatePlatformer(dt); if (gameState === STATES.PLAYING) drawPlatformer();
+    } else if (currentGame === 'breakerplus') { updateBreakerPlus(dt); if (gameState === STATES.PLAYING) drawBreakerPlus();
+    } else if (currentGame === 'match3') { updateMatch3(dt); if (gameState === STATES.PLAYING) drawMatch3();
+    } else if (currentGame === 'snake2') { updateSnake2(dt); if (gameState === STATES.PLAYING) drawSnake2();
+    } else if (currentGame === 'sudoku') { updateSudoku(dt); if (gameState === STATES.PLAYING) drawSudoku();
+    } else if (currentGame === 'mazeescape') { updateMazeescape(dt); if (gameState === STATES.PLAYING) drawMazeescape();
+    } else if (currentGame === 'towerdefense') { updateTowerdefense(dt); if (gameState === STATES.PLAYING) drawTowerdefense();
+    } else if (currentGame === 'bounceball') { updateBounceball(dt); if (gameState === STATES.PLAYING) drawBounceball();
+    } else if (currentGame === 'frogger') { updateFrogger(dt); if (gameState === STATES.PLAYING) drawFrogger();
+    } else if (currentGame === 'gemcollector') { updateGemcollector(dt); if (gameState === STATES.PLAYING) drawGemcollector();
+    } else if (currentGame === 'runner') { updateRunner(dt); if (gameState === STATES.PLAYING) drawRunner();
+    }
 
-    
     if (gameState === STATES.PLAYING) {
         animFrame = requestAnimationFrame(loop);
     }
@@ -1512,6 +1641,11 @@ $$('.game-card').forEach(card => {
         else if (currentGame === 'snake2') initSnake2();
         else if (currentGame === 'sudoku') initSudoku();
         else if (currentGame === 'mazeescape') initMazeescape();
+        else if (currentGame === 'runner') initRunner();
+        else if (currentGame === 'gemcollector') initGemcollector();
+        else if (currentGame === 'frogger') initFrogger();
+        else if (currentGame === 'bounceball') initBounceball();
+        else if (currentGame === 'towerdefense') initTowerdefense();
 
 
         
@@ -1551,6 +1685,11 @@ $('#startGameBtn').addEventListener('click', () => {
         else if (currentGame === 'snake2') initSnake2();
         else if (currentGame === 'sudoku') initSudoku();
         else if (currentGame === 'mazeescape') initMazeescape();
+        else if (currentGame === 'runner') initRunner();
+        else if (currentGame === 'gemcollector') initGemcollector();
+        else if (currentGame === 'frogger') initFrogger();
+        else if (currentGame === 'bounceball') initBounceball();
+        else if (currentGame === 'towerdefense') initTowerdefense();
 
 
     }
@@ -1610,6 +1749,11 @@ document.addEventListener('keydown', e => {
     else if (currentGame === 'snake2') handleSnake2Input(e.key);
     else if (currentGame === 'sudoku') handleSudokuInput(e.key);
     else if (currentGame === 'mazeescape') handleMazeescapeInput(e.key);
+    else if (currentGame === 'runner') handleRunnerInput(e.key);
+    else if (currentGame === 'gemcollector') handleGemcollectorInput(e.key);
+    else if (currentGame === 'frogger') handleFroggerInput(e.key);
+    else if (currentGame === 'bounceball') handleBounceballInput(e.key);
+    else if (currentGame === 'towerdefense') handleTowerdefenseInput(e.key);
 
 
 });
