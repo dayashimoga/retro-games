@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Retro Games — Snake, Tetris & 2048 | QuickUtils</title>
+    <meta name="keywords" content="QuickUtils, retro, games, code, design, productivity, online tools">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://quickutils.top/retro-games/">
+    <meta property="og:title" content="Retro Games — Snake, Tetris & 2048 | QuickUtils">
+    <meta property="og:description" content="Play classic retro games: Snake, Tetris, and 2048 all in one place. Mobile-friendly with high scores.">
+    <meta property="og:url" content="https://quickutils.top/retro-games/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="description" content="Play classic retro games: Snake, Tetris, and 2048 all in one place. Mobile-friendly with high scores.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -55,6 +63,16 @@
         <div class="game-card" data-game="frogger"><div class="game-emoji">🐸</div><div class="game-name">Frogger</div><div class="game-desc">Cross the road safely!</div></div>
         <div class="game-card" data-game="gemcollector"><div class="game-emoji">💎</div><div class="game-name">Gem Collector</div><div class="game-desc">Catch gems, dodge bombs!</div></div>
         <div class="game-card" data-game="runner"><div class="game-emoji">🏃</div><div class="game-name">Endless Runner</div><div class="game-desc">Jump over obstacles!</div></div>
+        <div class="game-card" data-game="simonsays"><div class="game-emoji">🔔</div><div class="game-name">Simon Says</div><div class="game-desc">Follow the pattern!</div></div>
+        <div class="game-card" data-game="streetracer"><div class="game-emoji">🏎️</div><div class="game-name">Street Racer 3D</div><div class="game-desc">Retro pseudo-3D driving!</div></div>
+        <div class="game-card" data-game="trafficrun"><div class="game-emoji">🚗</div><div class="game-name">Traffic Run</div><div class="game-desc">Crossy car dodger!</div></div>
+        <div class="game-card" data-game="meteordodge"><div class="game-emoji">☄️</div><div class="game-name">Meteor Dodge</div><div class="game-desc">Evade falling rocks!</div></div>
+        <div class="game-card" data-game="sokoban"><div class="game-emoji">📦</div><div class="game-name">Sokoban</div><div class="game-desc">Push boxes to goals!</div></div>
+        <div class="game-card" data-game="whackamole"><div class="game-emoji">🦫</div><div class="game-name">Whack-A-Mole</div><div class="game-desc">Type fast to whack!</div></div>
+        <div class="game-card" data-game="archery"><div class="game-emoji">🏹</div><div class="game-name">Archery</div><div class="game-desc">Time your shots perfectly!</div></div>
+        <div class="game-card" data-game="memorymatch"><div class="game-emoji">🧠</div><div class="game-name">Memory Match</div><div class="game-desc">Find all the pairs!</div></div>
+        <div class="game-card" data-game="lumberjack"><div class="game-emoji">🪓</div><div class="game-name">Lumberjack</div><div class="game-desc">Chop trees, dodge branches!</div></div>
+        <div class="game-card" data-game="spacepro"><div class="game-emoji">🛸</div><div class="game-name">Space Pro</div><div class="game-desc">Advanced space shooter!</div></div>
     </div>
     <section class="glass-card game-area" id="gameArea">
         <div class="game-stats">
@@ -63,7 +81,7 @@
             <span>Level: <strong id="gameLevel">1</strong></span>
         </div>
         <div style="position:relative">
-            <canvas id="gameCanvas" class="game-canvas" width="400" height="400"></canvas>
+            <canvas id="gameCanvas" class="game-canvas" width="400" height="400" tabindex="0"></canvas>
         </div>
         <div class="game-controls">
             <button class="btn btn-primary" id="startGameBtn">▶ Start</button>

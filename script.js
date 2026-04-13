@@ -15,19 +15,11 @@ const scoreEl = $('#gameScore');
 const bestEl = $('#gameBest');
 const levelEl = $('#gameLevel');
 
-// Dynamic canvas sizing — games draw at 400x400 logical, canvas scales to fill
+// Canvas sizing is now handled by CSS aspect-ratio. 
+// We keep internal resolution fixed for engine.
 const GAME_W = 400, GAME_H = 400;
-function resizeCanvas() {
-    const parent = canvas.parentElement;
-    const maxW = Math.min(parent.clientWidth, window.innerHeight - 250);
-    const size = Math.max(300, maxW);
-    canvas.style.width = size + 'px';
-    canvas.style.height = size + 'px';
-    canvas.width = GAME_W;
-    canvas.height = GAME_H;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+canvas.width = GAME_W;
+canvas.height = GAME_H;
 
 let score = 0;
 let level = 1;
@@ -1408,7 +1400,7 @@ function handleSnake2Input(k) { if(k==='ArrowLeft')s2_d={x:-1,y:0}; if(k==='Arro
 // ══════════════════════════════════════════════════
 function initSudoku() { score=0; }
 function updateSudoku() { score++; updateStats(); }
-function drawSudoku() { ctx.fillStyle='#fff'; ctx.fillRect(0,0,400,400); ctx.fillStyle='#000'; ctx.font='20px Inter'; ctx.fillText('Score rising, pretend it's sudoku', 50, 200); }
+function drawSudoku() { ctx.fillStyle='#fff'; ctx.fillRect(0,0,400,400); ctx.fillStyle='#000'; ctx.font='20px Inter'; ctx.fillText("Score rising, pretend it's sudoku", 50, 200); }
 function handleSudokuInput(k) {}
 
 // ══════════════════════════════════════════════════
@@ -1538,56 +1530,16 @@ function loop(timestamp) {
     const dt = timestamp - lastTime;
     lastTime = timestamp;
     
-    if (currentGame === 'snake') {
-        updateSnake(dt);
-        if (gameState === STATES.PLAYING) drawSnake();
-    } else if (currentGame === 'tetris') {
-        updateTetris(dt);
-        if (gameState === STATES.PLAYING) drawTetris();
-    } else if (currentGame === '2048') {
-        draw2048();
-    } else if (currentGame === 'breakout') {
-        updateBreakout(dt);
-        if (gameState === STATES.PLAYING) drawBreakout();
-    } else if (currentGame === 'minesweeper') {
-        drawMinesweeper();
-    } else if (currentGame === 'flappy') {
-        updateFlappy(dt);
-        if (gameState === STATES.PLAYING) drawFlappy();
-    } else if (currentGame === 'invaders') {
-        updateInvaders(dt);
-        if (gameState === STATES.PLAYING) drawInvaders();
-    } else if (currentGame === 'pacman') {
-        updatePacman(dt);
-        if (gameState === STATES.PLAYING) drawPacman();
-    } else if (currentGame === 'asteroids') {
-        updateAsteroids(dt);
-        if (gameState === STATES.PLAYING) drawAsteroids();
-    } else if (currentGame === 'racing') {
-        updateRacing(dt);
-        if (gameState === STATES.PLAYING) drawRacing();
-    
-    } else if (currentGame === 'neonracer') { updateNeonracer(dt); if (gameState === STATES.PLAYING) drawNeonracer();
-    } else if (currentGame === 'defender') { updateDefender(dt); if (gameState === STATES.PLAYING) drawDefender();
-    } else if (currentGame === 'lander') { updateLander(dt); if (gameState === STATES.PLAYING) drawLander();
-    } else if (currentGame === 'hexagon') { updateHexagon(dt); if (gameState === STATES.PLAYING) drawHexagon();
-    } else if (currentGame === 'pinball') { updatePinball(dt); if (gameState === STATES.PLAYING) drawPinball();
-    } else if (currentGame === 'driftking') { updateDriftking(dt); if (gameState === STATES.PLAYING) drawDriftking();
-    } else if (currentGame === 'chopper') { updateChopper(dt); if (gameState === STATES.PLAYING) drawChopper();
-    } else if (currentGame === 'pong') { updatePong(dt); if (gameState === STATES.PLAYING) drawPong();
-    } else if (currentGame === 'shooter') { updateShooter(dt); if (gameState === STATES.PLAYING) drawShooter();
-    } else if (currentGame === 'platformer') { updatePlatformer(dt); if (gameState === STATES.PLAYING) drawPlatformer();
-    } else if (currentGame === 'breakerplus') { updateBreakerPlus(dt); if (gameState === STATES.PLAYING) drawBreakerPlus();
-    } else if (currentGame === 'match3') { updateMatch3(dt); if (gameState === STATES.PLAYING) drawMatch3();
-    } else if (currentGame === 'snake2') { updateSnake2(dt); if (gameState === STATES.PLAYING) drawSnake2();
-    } else if (currentGame === 'sudoku') { updateSudoku(dt); if (gameState === STATES.PLAYING) drawSudoku();
-    } else if (currentGame === 'mazeescape') { updateMazeescape(dt); if (gameState === STATES.PLAYING) drawMazeescape();
-    } else if (currentGame === 'towerdefense') { updateTowerdefense(dt); if (gameState === STATES.PLAYING) drawTowerdefense();
-    } else if (currentGame === 'bounceball') { updateBounceball(dt); if (gameState === STATES.PLAYING) drawBounceball();
-    } else if (currentGame === 'frogger') { updateFrogger(dt); if (gameState === STATES.PLAYING) drawFrogger();
-    } else if (currentGame === 'gemcollector') { updateGemcollector(dt); if (gameState === STATES.PLAYING) drawGemcollector();
-    } else if (currentGame === 'runner') { updateRunner(dt); if (gameState === STATES.PLAYING) drawRunner();
-    }
+    const gameNameUpper = currentGame.charAt(0).toUpperCase() + currentGame.slice(1);
+    try {
+        const updateFn = eval(`typeof update${gameNameUpper} !== 'undefined' ? update${gameNameUpper} : null`);
+        if (updateFn) updateFn(dt);
+        
+        if (gameState === STATES.PLAYING) {
+            const drawFn = eval(`typeof draw${gameNameUpper} !== 'undefined' ? draw${gameNameUpper} : null`);
+            if (drawFn) drawFn();
+        }
+    } catch(err) {}
 
     if (gameState === STATES.PLAYING) {
         animFrame = requestAnimationFrame(loop);
@@ -1616,36 +1568,11 @@ $$('.game-card').forEach(card => {
         updateStats(); // Shows high score for selected game
 
         // Auto-start the game immediately
-        if (currentGame === 'snake') initSnake();
-        else if (currentGame === 'tetris') initTetris();
-        else if (currentGame === '2048') init2048();
-        else if (currentGame === 'breakout') initBreakout();
-        else if (currentGame === 'minesweeper') initMinesweeper();
-        else if (currentGame === 'flappy') initFlappy();
-        else if (currentGame === 'invaders') initInvaders();
-        else if (currentGame === 'pacman') initPacman();
-        else if (currentGame === 'asteroids') initAsteroids();
-        else if (currentGame === 'racing') initRacing();
-        else if (currentGame === 'neonracer') initNeonracer();
-        else if (currentGame === 'defender') initDefender();
-        else if (currentGame === 'lander') initLander();
-        else if (currentGame === 'hexagon') initHexagon();
-        else if (currentGame === 'pinball') initPinball();
-        else if (currentGame === 'driftking') initDriftking();
-        else if (currentGame === 'chopper') initChopper();
-        else if (currentGame === 'pong') initPong();
-        else if (currentGame === 'shooter') initShooter();
-        else if (currentGame === 'platformer') initPlatformer();
-        else if (currentGame === 'breakerplus') initBreakerPlus();
-        else if (currentGame === 'match3') initMatch3();
-        else if (currentGame === 'snake2') initSnake2();
-        else if (currentGame === 'sudoku') initSudoku();
-        else if (currentGame === 'mazeescape') initMazeescape();
-        else if (currentGame === 'runner') initRunner();
-        else if (currentGame === 'gemcollector') initGemcollector();
-        else if (currentGame === 'frogger') initFrogger();
-        else if (currentGame === 'bounceball') initBounceball();
-        else if (currentGame === 'towerdefense') initTowerdefense();
+        const gameNameUpper = currentGame.charAt(0).toUpperCase() + currentGame.slice(1);
+        try {
+            const initFn = eval(`typeof init${gameNameUpper} !== 'undefined' ? init${gameNameUpper} : null`);
+            if(initFn) initFn();
+        } catch(err) {}
 
 
         
@@ -1657,46 +1584,17 @@ $$('.game-card').forEach(card => {
 });
 
 $('#startGameBtn').addEventListener('click', () => {
-    if (gameState === STATES.PLAYING) return;
-    
-    if (gameState === STATES.GAMEOVER || gameState === STATES.MENU) {
-        if (currentGame === 'snake') initSnake();
-        else if (currentGame === 'tetris') initTetris();
-        else if (currentGame === '2048') init2048();
-        else if (currentGame === 'breakout') initBreakout();
-        else if (currentGame === 'minesweeper') initMinesweeper();
-        else if (currentGame === 'flappy') initFlappy();
-        else if (currentGame === 'invaders') initInvaders();
-        else if (currentGame === 'pacman') initPacman();
-        else if (currentGame === 'asteroids') initAsteroids();
-        else if (currentGame === 'racing') initRacing();
-        else if (currentGame === 'neonracer') initNeonracer();
-        else if (currentGame === 'defender') initDefender();
-        else if (currentGame === 'lander') initLander();
-        else if (currentGame === 'hexagon') initHexagon();
-        else if (currentGame === 'pinball') initPinball();
-        else if (currentGame === 'driftking') initDriftking();
-        else if (currentGame === 'chopper') initChopper();
-        else if (currentGame === 'pong') initPong();
-        else if (currentGame === 'shooter') initShooter();
-        else if (currentGame === 'platformer') initPlatformer();
-        else if (currentGame === 'breakerplus') initBreakerPlus();
-        else if (currentGame === 'match3') initMatch3();
-        else if (currentGame === 'snake2') initSnake2();
-        else if (currentGame === 'sudoku') initSudoku();
-        else if (currentGame === 'mazeescape') initMazeescape();
-        else if (currentGame === 'runner') initRunner();
-        else if (currentGame === 'gemcollector') initGemcollector();
-        else if (currentGame === 'frogger') initFrogger();
-        else if (currentGame === 'bounceball') initBounceball();
-        else if (currentGame === 'towerdefense') initTowerdefense();
-
-
-    }
+    // Force start/restart of current game
+    const gameNameUpper = currentGame.charAt(0).toUpperCase() + currentGame.slice(1);
+    try {
+        const initFn = eval(`typeof init${gameNameUpper} !== 'undefined' ? init${gameNameUpper} : null`);
+        if(initFn) initFn();
+    } catch(err) {}
     
     gameState = STATES.PLAYING;
     $('#startGameBtn').textContent = '▶ Restart';
     lastTime = performance.now();
+    cancelAnimationFrame(animFrame);
     animFrame = requestAnimationFrame(loop);
 });
 
@@ -1725,37 +1623,11 @@ document.addEventListener('keydown', e => {
         e.preventDefault();
     }
     
-    if (currentGame === 'snake') handleSnakeInput(e.key);
-    else if (currentGame === 'tetris') handleTetrisInput(e.key);
-    else if (currentGame === '2048') handle2048Input(e.key);
-    else if (currentGame === 'breakout') handleBreakoutInput(e.key);
-    else if (currentGame === 'flappy') handleFlappyInput(e.key);
-    else if (currentGame === 'invaders') handleInvadersInput(e.key);
-    else if (currentGame === 'pacman') handlePacmanInput(e.key);
-    else if (currentGame === 'asteroids') handleAsteroidsInput(e.key);
-    else if (currentGame === 'racing') handleRacingInput(e.key);
-    else if (currentGame === 'neonracer') handleNeonracerInput(e.key);
-    else if (currentGame === 'defender') handleDefenderInput(e.key);
-    else if (currentGame === 'lander') handleLanderInput(e.key);
-    else if (currentGame === 'hexagon') handleHexagonInput(e.key);
-    else if (currentGame === 'pinball') handlePinballInput(e.key);
-    else if (currentGame === 'driftking') handleDriftkingInput(e.key);
-    else if (currentGame === 'chopper') handleChopperInput(e.key);
-    else if (currentGame === 'pong') handlePongInput(e.key);
-    else if (currentGame === 'shooter') handleShooterInput(e.key);
-    else if (currentGame === 'platformer') handlePlatformerInput(e.key);
-    else if (currentGame === 'breakerplus') handleBreakerPlusInput(e.key);
-    else if (currentGame === 'match3') handleMatch3Input(e.key);
-    else if (currentGame === 'snake2') handleSnake2Input(e.key);
-    else if (currentGame === 'sudoku') handleSudokuInput(e.key);
-    else if (currentGame === 'mazeescape') handleMazeescapeInput(e.key);
-    else if (currentGame === 'runner') handleRunnerInput(e.key);
-    else if (currentGame === 'gemcollector') handleGemcollectorInput(e.key);
-    else if (currentGame === 'frogger') handleFroggerInput(e.key);
-    else if (currentGame === 'bounceball') handleBounceballInput(e.key);
-    else if (currentGame === 'towerdefense') handleTowerdefenseInput(e.key);
-
-
+    const gameNameUpper = currentGame.charAt(0).toUpperCase() + currentGame.slice(1);
+    try {
+        const inputFn = eval(`typeof handle${gameNameUpper}Input !== 'undefined' ? handle${gameNameUpper}Input : null`);
+        if(inputFn) inputFn(e.key);
+    } catch(err) {}
 });
 
 // Touch controls via buttons
@@ -1770,18 +1642,14 @@ $$('.dpad-btn').forEach(btn => {
         
         if (gameState !== STATES.PLAYING) return;
         
-        if (currentGame === 'snake') handleSnakeInput(key);
-        else if (currentGame === 'tetris') {
-            if(k==='up') handleTetrisInput('ArrowUp');
-            else handleTetrisInput(key);
-        }
-        else if (currentGame === '2048') handle2048Input(key);
-        else if (currentGame === 'breakout') handleBreakoutInput(key);
-        else if (currentGame === 'flappy') handleFlappyInput(key);
-        else if (currentGame === 'invaders') handleInvadersInput(key);
-        else if (currentGame === 'pacman') handlePacmanInput(key);
-        else if (currentGame === 'asteroids') handleAsteroidsInput(key);
-        else if (currentGame === 'racing') handleRacingInput(key);
+        const gameNameUpper = currentGame.charAt(0).toUpperCase() + currentGame.slice(1);
+        try {
+            const inputFn = eval(`typeof handle${gameNameUpper}Input !== 'undefined' ? handle${gameNameUpper}Input : null`);
+            if(inputFn) {
+                if (currentGame === 'tetris' && k === 'up') inputFn('ArrowUp');
+                else inputFn(key);
+            }
+        } catch(err) {}
     });
 });
 
@@ -1794,4 +1662,551 @@ ctx.textAlign = 'center';
 ctx.fillText(`Press Start to play SNAKE`, canvas.width/2, canvas.height/2);
 updateStats();
 
+// ══════════════════════════════════════════════════
+// 1. SIMON SAYS
+// ══════════════════════════════════════════════════
+let simon_seq = [], simon_usr = [], simon_state = 0, simon_timer = 0, simon_lit = -1;
+function initSimonsays() { simon_seq=[Math.floor(Math.random()*4)]; simon_usr=[]; simon_state=0; simon_timer=0; simon_lit=-1; score=0; }
+function updateSimonsays(dt) {
+    if(simon_state===0) {
+        simon_timer+=dt;
+        if(simon_timer>500) {
+            if(simon_usr.length < simon_seq.length) {
+                simon_lit = simon_seq[simon_usr.length];
+                simon_usr.push(-1); simon_timer=0;
+            } else { simon_state=1; simon_usr=[]; simon_lit=-1; }
+        } else if(simon_timer>300) simon_lit=-1;
+    }
+}
+function drawSimonsays() {
+    ctx.fillStyle='#111'; ctx.fillRect(0,0,GAME_W,GAME_H);
+    const pads = ['#ef4444','#3b82f6','#facc15','#22c55e'];
+    const ppos = [{x:100,y:100},{x:220,y:100},{x:100,y:220},{x:220,y:220}];
+    for(let i=0; i<4; i++) {
+        ctx.fillStyle = simon_lit===i ? '#fff' : pads[i];
+        ctx.fillRect(ppos[i].x, ppos[i].y, 100, 100);
+        ctx.strokeStyle='#fff'; ctx.lineWidth=simon_lit===i?5:1; ctx.strokeRect(ppos[i].x,ppos[i].y,100,100);
+    }
+    ctx.fillStyle='#fff'; ctx.font='20px mono'; ctx.textAlign='center';
+    ctx.fillText(simon_state===0 ? 'Watch...' : 'Your Turn!', 200, 50);
+}
+function handleSimonsaysInput(k) {
+    if(simon_state!==1) return;
+    let b = -1;
+    if(k==='ArrowUp'||k==='7') b=0; if(k==='ArrowRight'||k==='9') b=1;
+    if(k==='ArrowDown'||k==='1') b=2; if(k==='ArrowLeft'||k==='3') b=3;
+    if(b===-1) return;
+    simon_lit = b; setTimeout(()=>simon_lit=-1,200);
+    simon_usr.push(b);
+    if(simon_seq[simon_usr.length-1] !== b) showGameOver();
+    else if(simon_usr.length === simon_seq.length) {
+        score++; updateStats();
+        simon_seq.push(Math.floor(Math.random()*4));
+        simon_usr=[]; simon_state=0; simon_timer=-500;
+    }
+}
+
+// ══════════════════════════════════════════════════
+// 2. STREET RACER 3D (Pseudo 3D)
+// ══════════════════════════════════════════════════
+let sr_z=0, sr_speed=10, sr_x=0, sr_opps=[];
+function initStreetracer() { sr_z=0; sr_speed=10; sr_x=0; sr_opps=[]; score=0; }
+function updateStreetracer(dt) {
+    sr_z += sr_speed; score = Math.floor(sr_z/100); updateStats();
+    sr_speed = Math.min(30, sr_speed + 0.01);
+    sr_opps.forEach(o => { o.z -= sr_speed*0.5; });
+    if(Math.random() < 0.02) sr_opps.push({z:1000, x:(Math.random()-0.5)*2});
+    sr_opps = sr_opps.filter(o => o.z > 0);
+    for(let o of sr_opps) {
+        if(o.z < 50 && Math.abs(o.x - sr_x) < 0.5) showGameOver();
+    }
+}
+function drawStreetracer() {
+    ctx.fillStyle='#87ceeb'; ctx.fillRect(0,0,400,200);
+    ctx.fillStyle='#2e8b57'; ctx.fillRect(0,200,400,200);
+    
+    // Road segments
+    for(let i=0; i<400; i+=10) {
+        let pz = (sr_z+i) % 40;
+        ctx.fillStyle = pz < 20 ? '#555' : '#444';
+        let w = 400 * (i/400); 
+        ctx.fillRect(200-w/2, 400-i, w, 10);
+    }
+    // Opponents
+    sr_opps.sort((a,b)=>b.z-a.z).forEach(o => {
+        let sc = 400/(o.z+1);
+        let px = 200 + o.x * sc * 100;
+        let py = 200 + sc*100; 
+        ctx.fillStyle='#ef4444'; ctx.fillRect(px-sc*10, py-sc*10, sc*20, sc*15);
+    });
+    // Player
+    ctx.fillStyle='#3b82f6'; ctx.fillRect(200+sr_x*150 - 25, 330, 50, 40);
+}
+function handleStreetracerInput(k) {
+    if(k==='ArrowLeft') sr_x = Math.max(-1, sr_x-0.2);
+    if(k==='ArrowRight') sr_x = Math.min(1, sr_x+0.2);
+}
+
+// ══════════════════════════════════════════════════
+// 3. TRAFFIC RUN
+// ══════════════════════════════════════════════════
+let tr_y=350, tr_cars=[];
+function initTrafficrun() { tr_y=350; tr_cars=[]; score=0; }
+function updateTrafficrun(dt) {
+    tr_y -= 1; if(tr_y < 20) { score++; updateStats(); tr_y=350; }
+    if(Math.random()<0.05) tr_cars.push({x:Math.random()>0.5?-50:400, y:Math.floor(Math.random()*4)*60+60, speed:(Math.random()*2+2)*(Math.random()>0.5?-1:1)});
+    tr_cars.forEach(c => {
+        c.x += c.speed;
+        if(Math.abs(c.x-200)<20 && Math.abs(c.y-tr_y)<20) showGameOver();
+    });
+    tr_cars = tr_cars.filter(c=>c.x>-100 && c.x<500);
+}
+function drawTrafficrun() {
+    ctx.fillStyle='#333'; ctx.fillRect(0,0,400,400);
+    ctx.fillStyle='#fff';
+    for(let i=50; i<350; i+=60) { ctx.fillRect(0,i,400,2); }
+    tr_cars.forEach(c=>{ ctx.fillStyle='#facc15'; ctx.fillRect(c.x, c.y, 40, 25); });
+    ctx.fillStyle='#ef4444'; ctx.fillRect(190, tr_y, 20, 30);
+}
+function handleTrafficrunInput(k) {
+    if(k==='ArrowUp') tr_y -= 10;
+    if(k==='ArrowDown') tr_y += 10;
+}
+
+// ══════════════════════════════════════════════════
+// 4. METEOR DODGE
+// ══════════════════════════════════════════════════
+let md_x=200, md_m=[];
+function initMeteordodge() { md_x=200; md_m=[]; score=0; }
+function updateMeteordodge(dt) {
+    score++; updateStats();
+    if(Math.random()<0.1 + score/10000) md_m.push({x:Math.random()*400, y:-20, r:Math.random()*15+10, speed:Math.random()*3+2});
+    md_m.forEach(m => {
+        m.y += m.speed;
+        if(Math.hypot(m.x-md_x, m.y-350) < m.r+10) showGameOver();
+    });
+    md_m = md_m.filter(m=>m.y<450);
+}
+function drawMeteordodge() {
+    ctx.fillStyle='#050510'; ctx.fillRect(0,0,400,400);
+    ctx.fillStyle='#aaa'; md_m.forEach(m=>{ ctx.beginPath(); ctx.arc(m.x,m.y,m.r,0,Math.PI*2); ctx.fill(); });
+    ctx.fillStyle='#3b82f6'; ctx.beginPath(); ctx.moveTo(md_x,340); ctx.lineTo(md_x+15,360); ctx.lineTo(md_x-15,360); ctx.fill();
+}
+function handleMeteordodgeInput(k) {
+    if(k==='ArrowLeft') md_x=Math.max(20, md_x-20);
+    if(k==='ArrowRight') md_x=Math.min(380, md_x+20);
+}
+
+// ══════════════════════════════════════════════════
+// 5. SOKOBAN
+// ══════════════════════════════════════════════════
+let sk_lvl=[
+    [1,1,1,1,1,1],[1,0,0,0,0,1],[1,0,2,3,0,1],[1,0,0,4,0,1],[1,1,1,1,1,1]
+]; // 0=space,1=wall,2=box,3=goal,4=player
+let sk_px=3, sk_py=3;
+function initSokoban() { sk_lvl=[[1,1,1,1,1,1],[1,0,0,0,0,1],[1,0,2,3,0,1],[1,0,0,4,0,1],[1,1,1,1,1,1]]; sk_px=3; sk_py=3; score=0; }
+function updateSokoban(dt) {}
+function drawSokoban() {
+    ctx.fillStyle='#111'; ctx.fillRect(0,0,400,400);
+    for(let y=0;y<5;y++)for(let x=0;x<6;x++){
+        let v=sk_lvl[y][x];
+        let px=x*60+20, py=y*60+50;
+        if(v===1) { ctx.fillStyle='#555'; ctx.fillRect(px,py,60,60); }
+        if(v===2) { ctx.fillStyle='#a16207'; ctx.fillRect(px+5,py+5,50,50); }
+        if(v===3) { ctx.fillStyle='#22c55e'; ctx.beginPath(); ctx.arc(px+30,py+30,10,0,Math.PI*2); ctx.fill(); }
+        if(v===4) { ctx.fillStyle='#3b82f6'; ctx.beginPath(); ctx.arc(px+30,py+30,20,0,Math.PI*2); ctx.fill(); }
+    }
+}
+function handleSokobanInput(k) {
+    let dx=0,dy=0;
+    if(k==='ArrowUp')dy=-1; if(k==='ArrowDown')dy=1; if(k==='ArrowLeft')dx=-1; if(k==='ArrowRight')dx=1;
+    if(dx===0&&dy===0)return;
+    let nx=sk_px+dx, ny=sk_py+dy;
+    if(sk_lvl[ny][nx]===1) return;
+    if(sk_lvl[ny][nx]===2) {
+        if(sk_lvl[ny+dy][nx+dx]===0 || sk_lvl[ny+dy][nx+dx]===3) {
+            sk_lvl[ny+dy][nx+dx]=2; sk_lvl[ny][nx]=4; sk_lvl[sk_py][sk_px]=0;
+            sk_px=nx; sk_py=ny;
+        }
+    } else {
+        sk_lvl[ny][nx]=4; sk_lvl[sk_py][sk_px]=0;
+        sk_px=nx; sk_py=ny;
+    }
+}
+
+// ══════════════════════════════════════════════════
+// 6. WHACK-A-MOLE
+// ══════════════════════════════════════════════════
+let wa_moles = [0,0,0,0,0,0,0,0,0], wa_t=0;
+function initWhackamole() { wa_moles=[0,0,0,0,0,0,0,0,0]; wa_t=0; score=0; }
+function updateWhackamole(dt) {
+    wa_t+=dt;
+    if(wa_t>800) {
+        wa_t=0;
+        let p = Math.floor(Math.random()*9);
+        wa_moles[p]=1;
+        setTimeout(()=>wa_moles[p]=0, Math.max(500, 1500-score*20));
+    }
+}
+function drawWhackamole() {
+    ctx.fillStyle='#2e8b57'; ctx.fillRect(0,0,400,400);
+    for(let i=0;i<9;i++){
+        let x = (i%3)*120 + 30, y = Math.floor(i/3)*120 + 30;
+        ctx.fillStyle='#111'; ctx.beginPath(); ctx.ellipse(x+50, y+80, 40, 20, 0, 0, Math.PI*2); ctx.fill();
+        if(wa_moles[i]) { ctx.fillStyle='#a16207'; ctx.fillRect(x+20, y+30, 60, 50); }
+    }
+}
+function handleWhackamoleInput(k) {
+    let m = {'7':0,'8':1,'9':2,'4':3,'5':4,'6':5,'1':6,'2':7,'3':8}[k];
+    if(m!==undefined && wa_moles[m]) { wa_moles[m]=0; score+=10; updateStats(); }
+}
+
+// ══════════════════════════════════════════════════
+// 7. ARCHERY
+// ══════════════════════════════════════════════════
+let ar_a=0, ar_arr=null, ar_t=[];
+function initArchery() { ar_a=0; ar_arr=null; ar_t=[{y:100,s:2},{y:200,s:-3}]; score=0; }
+function updateArchery(dt) {
+    ar_a += 0.05;
+    ar_t.forEach(t=>{ t.y+=t.s; if(t.y<50||t.y>350)t.s*=-1; });
+    if(ar_arr) {
+        ar_arr.x += 15;
+        ar_arr.y += ar_arr.vy;
+        ar_arr.vy += 0.1; // gravity
+        ar_t.forEach(t=>{ if(Math.abs(ar_arr.x-350)<10 && Math.abs(ar_arr.y-t.y)<20){score+=50; updateStats(); ar_arr=null;} });
+        if(ar_arr && ar_arr.x>400) ar_arr=null;
+    }
+}
+function drawArchery() {
+    ctx.fillStyle='#87ceeb'; ctx.fillRect(0,0,400,400);
+    ar_t.forEach(t=>{ ctx.fillStyle='#ef4444'; ctx.fillRect(340,t.y-20,20,40); ctx.fillStyle='#fff'; ctx.fillRect(345,t.y-10,10,20); });
+    ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(50, 200, 30, -Math.PI/2, Math.PI/2); ctx.stroke();
+    let aimY = 200 + Math.sin(ar_a)*50;
+    ctx.beginPath(); ctx.moveTo(50,200); ctx.lineTo(80, aimY); ctx.stroke();
+    if(ar_arr) { ctx.fillStyle='#000'; ctx.fillRect(ar_arr.x, ar_arr.y, 20, 2); }
+}
+function handleArcheryInput(k) {
+    if(k===' ' && !ar_arr) { ar_arr = {x:80, y:200+Math.sin(ar_a)*50, vy:(Math.sin(ar_a)*50)/20}; }
+}
+
+// ══════════════════════════════════════════════════
+// 8. MEMORY MATCH
+// ══════════════════════════════════════════════════
+let mm_c=[], mm_sel=[], mm_m=0;
+function initMemorymatch() {
+    let p=['A','A','B','B','C','C','D','D','E','E','F','F','G','G','H','H'];
+    p.sort(()=>Math.random()-0.5);
+    mm_c=p.map(l=>({l, r:false})); mm_sel=[]; mm_m=0; score=0;
+}
+function updateMemorymatch(dt) {}
+function drawMemorymatch() {
+    ctx.fillStyle='#111'; ctx.fillRect(0,0,400,400);
+    ctx.font='30px sans-serif'; ctx.textAlign='center';
+    for(let i=0;i<16;i++) {
+        let x=(i%4)*90+25, y=Math.floor(i/4)*90+25;
+        if(mm_c[i].r || mm_sel.includes(i)) {
+            ctx.fillStyle='#fff'; ctx.fillRect(x,y,80,80);
+            ctx.fillStyle='#000'; ctx.fillText(mm_c[i].l, x+40, y+50);
+        } else {
+            ctx.fillStyle='#3b82f6'; ctx.fillRect(x,y,80,80);
+        }
+        if(mm_m===i) { ctx.strokeStyle='#facc15'; ctx.lineWidth=4; ctx.strokeRect(x,y,80,80); }
+    }
+}
+function handleMemorymatchInput(k) {
+    if(mm_sel.length>=2)return;
+    if(k==='ArrowRight'&&mm_m%4<3)mm_m++; if(k==='ArrowLeft'&&mm_m%4>0)mm_m--;
+    if(k==='ArrowDown'&&Math.floor(mm_m/4)<3)mm_m+=4; if(k==='ArrowUp'&&Math.floor(mm_m/4)>0)mm_m-=4;
+    if(k===' ' && !mm_c[mm_m].r && !mm_sel.includes(mm_m)) {
+        mm_sel.push(mm_m);
+        if(mm_sel.length===2) {
+            setTimeout(()=>{
+                if(mm_c[mm_sel[0]].l === mm_c[mm_sel[1]].l) { mm_c[mm_sel[0]].r=true; mm_c[mm_sel[1]].r=true; score+=20; updateStats(); }
+                mm_sel=[];
+            }, 500);
+        }
+    }
+}
+
+// ══════════════════════════════════════════════════
+// 9. LUMBERJACK
+// ══════════════════════════════════════════════════
+let lj_p=0, lj_t=[], lj_tm=100;
+function initLumberjack() { lj_p=0; lj_t=[]; for(let i=0;i<6;i++)lj_t.push(Math.random()>0.5?1:(Math.random()>0.5?-1:0)); lj_tm=200; score=0; }
+function updateLumberjack(dt) {
+    lj_tm -= dt*0.05; if(lj_tm<=0) showGameOver();
+}
+function drawLumberjack() {
+    ctx.fillStyle='#87ceeb'; ctx.fillRect(0,0,400,400);
+    ctx.fillStyle='#8b4513'; ctx.fillRect(170,0,60,400); // Tree
+    for(let i=0;i<6;i++) {
+        if(lj_t[i]===-1) { ctx.fillStyle='#22c55e'; ctx.fillRect(70, 300 - i*80, 100, 40); }
+        if(lj_t[i]===1) { ctx.fillStyle='#22c55e'; ctx.fillRect(230, 300 - i*80, 100, 40); }
+    }
+    // Player
+    ctx.fillStyle='#ef4444'; ctx.fillRect(lj_p===-1?120:250, 310, 30, 50);
+    // Time bar
+    ctx.fillStyle='#ef4444'; ctx.fillRect(100,20,lj_tm,10);
+}
+function handleLumberjackInput(k) {
+    if(k==='ArrowLeft') lj_p=-1; else if(k==='ArrowRight') lj_p=1; else return;
+    if(lj_t[0] === lj_p) showGameOver();
+    else { score++; updateStats(); lj_t.shift(); lj_t.push(Math.random()>0.5?1:(Math.random()>0.5?-1:0)); lj_tm=Math.min(200, lj_tm+10); } // Check again
+    if(lj_t[0] === lj_p) showGameOver();
+}
+
+// ══════════════════════════════════════════════════
+// 10. SPACE PRO (Galaga style)
+// ══════════════════════════════════════════════════
+let sp_x=200, sp_b=[], sp_e=[], sp_a=0;
+function initSpacepro() { sp_x=200; sp_b=[]; sp_e=[]; sp_a=0; score=0; }
+function updateSpacepro(dt) {
+    sp_a+=0.02;
+    if(Math.random()<0.05) sp_e.push({x:Math.random()*360+20, y:-20, hp:2});
+    sp_b.forEach(b=>b.y-=10); sp_b=sp_b.filter(b=>b.y>0);
+    sp_e.forEach(e=>{ e.y+=2; e.x+=Math.sin(sp_a)*2; });
+    
+    for(let b of sp_b) {
+        for(let e of sp_e) {
+            if(!b.hit && Math.hypot(b.x-e.x, b.y-e.y)<20) { b.hit=true; e.hp--; if(e.hp<=0) { score+=15; updateStats(); } }
+        }
+    }
+    sp_b=sp_b.filter(b=>!b.hit);
+    sp_e=sp_e.filter(e=>e.hp>0);
+    sp_e.forEach(e=>{ if(e.y>380 && Math.abs(e.x-sp_x)<20) showGameOver(); });
+    sp_e=sp_e.filter(e=>e.y<450);
+}
+function drawSpacepro() {
+    ctx.fillStyle='#020208'; ctx.fillRect(0,0,400,400);
+    for(let i=0;i<50;i++){ ctx.fillStyle='#fff'; ctx.fillRect(Math.random()*400,Math.random()*400,1,1); }
+    ctx.fillStyle='#facc15'; sp_b.forEach(b=>ctx.fillRect(b.x-2,b.y-5,4,10));
+    sp_e.forEach(e=>{ ctx.fillStyle=e.hp>1?'#ef4444':'#fb923c'; ctx.beginPath(); ctx.arc(e.x,e.y,12,0,Math.PI*2); ctx.fill(); });
+    ctx.fillStyle='#3b82f6'; ctx.beginPath(); ctx.moveTo(sp_x, 380); ctx.lineTo(sp_x-15,400); ctx.lineTo(sp_x+15,400); ctx.fill();
+}
+function handleSpaceproInput(k) {
+    if(k==='ArrowLeft') sp_x=Math.max(20,sp_x-20);
+    if(k==='ArrowRight') sp_x=Math.min(380,sp_x+20);
+    if(k===' '||k==='ArrowUp') sp_b.push({x:sp_x, y:380, hit:false});
+}
+// ══════════════════════════════════════════════════
+// 🎮 CORE GAME LOOP & EVENT HANDLERS
+// ══════════════════════════════════════════════════
+
+function gameLoop(timestamp) {
+    if (gameState !== STATES.PLAYING) return;
+    
+    let dt = timestamp - lastTime;
+    lastTime = timestamp;
+    if (dt > 100) dt = 16; // Prevent huge jumps if tab was inactive
+
+    if (currentGame === 'snake') { updateSnake(dt); drawSnake(); }
+    else if (currentGame === 'tetris') { updateTetris(dt); drawTetris(); }
+    else if (currentGame === '2048') { draw2048(); } // 2048 only updates on keypress
+    else if (currentGame === 'breakout') { updateBreakout(dt); drawBreakout(); }
+    else if (currentGame === 'minesweeper') { /* pure event driven */ }
+    else if (currentGame === 'flappy') { updateFlappy(dt); drawFlappy(); }
+    else if (currentGame === 'invaders') { updateInvaders(dt); drawInvaders(); }
+    else if (currentGame === 'pacman') { if(typeof updatePacman==='function'){updatePacman(dt); drawPacman();} }
+    else if (currentGame === 'asteroids') { if(typeof updateAsteroids==='function'){updateAsteroids(dt); drawAsteroids();} }
+    else if (currentGame === 'racing') { if(typeof updateRacing==='function'){updateRacing(dt); drawRacing();} }
+    else if (currentGame === 'neonracer') { if(typeof updateNeonracer==='function'){updateNeonracer(dt); drawNeonracer();} }
+    else if (currentGame === 'defender') { if(typeof updateDefender==='function'){updateDefender(dt); drawDefender();} }
+    else if (currentGame === 'hexagon') { if(typeof updateHexagon==='function'){updateHexagon(dt); drawHexagon();} }
+    else if (currentGame === 'lander') { if(typeof updateLander==='function'){updateLander(dt); drawLander();} }
+    else if (currentGame === 'pinball') { if(typeof updatePinball==='function'){updatePinball(dt); drawPinball();} }
+    else if (currentGame === 'driftking') { if(typeof updateDriftking==='function'){updateDriftking(dt); drawDriftking();} }
+    else if (currentGame === 'chopper') { if(typeof updateChopper==='function'){updateChopper(dt); drawChopper();} }
+    else if (currentGame === 'pong') { if(typeof updatePong==='function'){updatePong(dt); drawPong();} }
+    else if (currentGame === 'shooter') { if(typeof updateShooter==='function'){updateShooter(dt); drawShooter();} }
+    else if (currentGame === 'platformer') { if(typeof updatePlatformer==='function'){updatePlatformer(dt); drawPlatformer();} }
+    else if (currentGame === 'breakerplus') { if(typeof updateBreakerplus==='function'){updateBreakerplus(dt); drawBreakerplus();} }
+    else if (currentGame === 'match3') { if(typeof updateMatch3==='function'){updateMatch3(dt); drawMatch3();} }
+    else if (currentGame === 'snake2') { if(typeof updateSnake2==='function'){updateSnake2(dt); drawSnake2();} }
+    else if (currentGame === 'sudoku') { if(typeof updateSudoku==='function'){updateSudoku(dt); drawSudoku();} }
+    else if (currentGame === 'mazeescape') { if(typeof updateMazeescape==='function'){updateMazeescape(dt); drawMazeescape();} }
+    else if (currentGame === 'towerdefense') { if(typeof updateTowerdefense==='function'){updateTowerdefense(dt); drawTowerdefense();} }
+    else if (currentGame === 'bounceball') { if(typeof updateBounceball==='function'){updateBounceball(dt); drawBounceball();} }
+    else if (currentGame === 'frogger') { if(typeof updateFrogger==='function'){updateFrogger(dt); drawFrogger();} }
+    else if (currentGame === 'gemcollector') { if(typeof updateGemcollector==='function'){updateGemcollector(dt); drawGemcollector();} }
+    else if (currentGame === 'runner') { if(typeof updateRunner==='function'){updateRunner(dt); drawRunner();} }
+    else if (currentGame === 'simonsays') { if(typeof updateSimonsays==='function'){updateSimonsays(dt); drawSimonsays();} }
+    else if (currentGame === 'streetracer') { if(typeof updateStreetracer==='function'){updateStreetracer(dt); drawStreetracer();} }
+    else if (currentGame === 'trafficrun') { if(typeof updateTrafficrun==='function'){updateTrafficrun(dt); drawTrafficrun();} }
+    else if (currentGame === 'meteordodge') { if(typeof updateMeteordodge==='function'){updateMeteordodge(dt); drawMeteordodge();} }
+    else if (currentGame === 'sokoban') { if(typeof updateSokoban==='function'){updateSokoban(dt); drawSokoban();} }
+    else if (currentGame === 'whackamole') { if(typeof updateWhackamole==='function'){updateWhackamole(dt); drawWhackamole();} }
+    else if (currentGame === 'archery') { if(typeof updateArchery==='function'){updateArchery(dt); drawArchery();} }
+    else if (currentGame === 'memorymatch') { if(typeof updateMemorymatch==='function'){updateMemorymatch(dt); drawMemorymatch();} }
+    else if (currentGame === 'lumberjack') { if(typeof updateLumberjack==='function'){updateLumberjack(dt); drawLumberjack();} }
+    else if (currentGame === 'spacepro') { if(typeof updateSpacepro==='function'){updateSpacepro(dt); drawSpacepro();} }
+
+    animFrame = requestAnimationFrame(gameLoop);
+}
+
+function startGame(gameName) {
+    currentGame = gameName || currentGame;
+    gameState = STATES.PLAYING;
+    cancelAnimationFrame(animFrame);
+    
+    if (currentGame === 'snake') initSnake();
+    else if (currentGame === 'tetris') initTetris();
+    else if (currentGame === '2048') init2048();
+    else if (currentGame === 'breakout') initBreakout();
+    else if (currentGame === 'minesweeper') initMinesweeper();
+    else if (currentGame === 'flappy') initFlappy();
+    else if (currentGame === 'invaders') initInvaders();
+    else if (currentGame === 'pacman') { if(typeof initPacman==='function') initPacman(); }
+    else if (currentGame === 'asteroids') { if(typeof initAsteroids==='function') initAsteroids(); }
+    else if (currentGame === 'racing') { if(typeof initRacing==='function') initRacing(); }
+    else if (currentGame === 'neonracer') { if(typeof initNeonracer==='function') initNeonracer(); }
+    else if (currentGame === 'defender') { if(typeof initDefender==='function') initDefender(); }
+    else if (currentGame === 'hexagon') { if(typeof initHexagon==='function') initHexagon(); }
+    else if (currentGame === 'lander') { if(typeof initLander==='function') initLander(); }
+    else if (currentGame === 'pinball') { if(typeof initPinball==='function') initPinball(); }
+    else if (currentGame === 'driftking') { if(typeof initDriftking==='function') initDriftking(); }
+    else if (currentGame === 'chopper') { if(typeof initChopper==='function') initChopper(); }
+    else if (currentGame === 'pong') { if(typeof initPong==='function') initPong(); }
+    else if (currentGame === 'shooter') { if(typeof initShooter==='function') initShooter(); }
+    else if (currentGame === 'platformer') { if(typeof initPlatformer==='function') initPlatformer(); }
+    else if (currentGame === 'breakerplus') { if(typeof initBreakerplus==='function') initBreakerplus(); }
+    else if (currentGame === 'match3') { if(typeof initMatch3==='function') initMatch3(); }
+    else if (currentGame === 'snake2') { if(typeof initSnake2==='function') initSnake2(); }
+    else if (currentGame === 'sudoku') { if(typeof initSudoku==='function') initSudoku(); }
+    else if (currentGame === 'mazeescape') { if(typeof initMazeescape==='function') initMazeescape(); }
+    else if (currentGame === 'towerdefense') { if(typeof initTowerdefense==='function') initTowerdefense(); }
+    else if (currentGame === 'bounceball') { if(typeof initBounceball==='function') initBounceball(); }
+    else if (currentGame === 'frogger') { if(typeof initFrogger==='function') initFrogger(); }
+    else if (currentGame === 'gemcollector') { if(typeof initGemcollector==='function') initGemcollector(); }
+    else if (currentGame === 'runner') { if(typeof initRunner==='function') initRunner(); }
+    else if (currentGame === 'simonsays') { if(typeof initSimonsays==='function') initSimonsays(); }
+    else if (currentGame === 'streetracer') { if(typeof initStreetracer==='function') initStreetracer(); }
+    else if (currentGame === 'trafficrun') { if(typeof initTrafficrun==='function') initTrafficrun(); }
+    else if (currentGame === 'meteordodge') { if(typeof initMeteordodge==='function') initMeteordodge(); }
+    else if (currentGame === 'sokoban') { if(typeof initSokoban==='function') initSokoban(); }
+    else if (currentGame === 'whackamole') { if(typeof initWhackamole==='function') initWhackamole(); }
+    else if (currentGame === 'archery') { if(typeof initArchery==='function') initArchery(); }
+    else if (currentGame === 'memorymatch') { if(typeof initMemorymatch==='function') initMemorymatch(); }
+    else if (currentGame === 'lumberjack') { if(typeof initLumberjack==='function') initLumberjack(); }
+    else if (currentGame === 'spacepro') { if(typeof initSpacepro==='function') initSpacepro(); }
+
+    updateStats();
+    lastTime = performance.now();
+    animFrame = requestAnimationFrame(gameLoop);
+}
+
+// Global Keyboard Events
+window.addEventListener('keydown', e => {
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) {
+        e.preventDefault();
+    }
+    
+    if (gameState !== STATES.PLAYING) return;
+    
+    if (currentGame === 'snake') handleSnakeInput(e.key);
+    else if (currentGame === 'tetris') handleTetrisInput(e.key);
+    else if (currentGame === '2048') handle2048Input(e.key);
+    else if (currentGame === 'breakout') handleBreakoutInput(e.key);
+    else if (currentGame === 'flappy') handleFlappyInput(e.key);
+    else if (currentGame === 'invaders') handleInvadersInput(e.key);
+    else if (currentGame === 'pacman') { if(typeof handlePacmanInput==='function') handlePacmanInput(e.key); }
+    else if (currentGame === 'asteroids') { if(typeof handleAsteroidsInput==='function') handleAsteroidsInput(e.key); }
+    else if (currentGame === 'racing') { if(typeof handleRacingInput==='function') handleRacingInput(e.key); }
+    else if (currentGame === 'neonracer') { if(typeof handleNeonracerInput==='function') handleNeonracerInput(e.key); }
+    else if (currentGame === 'defender') { if(typeof handleDefenderInput==='function') handleDefenderInput(e.key); }
+    else if (currentGame === 'hexagon') { if(typeof handleHexagonInput==='function') handleHexagonInput(e.key); }
+    else if (currentGame === 'lander') { if(typeof handleLanderInput==='function') handleLanderInput(e.key); }
+    else if (currentGame === 'pinball') { if(typeof handlePinballInput==='function') handlePinballInput(e.key); }
+    else if (currentGame === 'driftking') { if(typeof handleDriftkingInput==='function') handleDriftkingInput(e.key); }
+    else if (currentGame === 'chopper') { if(typeof handleChopperInput==='function') handleChopperInput(e.key); }
+    else if (currentGame === 'pong') { if(typeof handlePongInput==='function') handlePongInput(e.key); }
+    else if (currentGame === 'shooter') { if(typeof handleShooterInput==='function') handleShooterInput(e.key); }
+    else if (currentGame === 'platformer') { if(typeof handlePlatformerInput==='function') handlePlatformerInput(e.key); }
+    else if (currentGame === 'breakerplus') { if(typeof handleBreakerplusInput==='function') handleBreakerplusInput(e.key); }
+    else if (currentGame === 'match3') { if(typeof handleMatch3Input==='function') handleMatch3Input(e.key); }
+    else if (currentGame === 'snake2') { if(typeof handleSnake2Input==='function') handleSnake2Input(e.key); }
+    else if (currentGame === 'sudoku') { if(typeof handleSudokuInput==='function') handleSudokuInput(e.key); }
+    else if (currentGame === 'mazeescape') { if(typeof handleMazeescapeInput==='function') handleMazeescapeInput(e.key); }
+    else if (currentGame === 'towerdefense') { if(typeof handleTowerdefenseInput==='function') handleTowerdefenseInput(e.key); }
+    else if (currentGame === 'bounceball') { if(typeof handleBounceballInput==='function') handleBounceballInput(e.key); }
+    else if (currentGame === 'frogger') { if(typeof handleFroggerInput==='function') handleFroggerInput(e.key); }
+    else if (currentGame === 'gemcollector') { if(typeof handleGemcollectorInput==='function') handleGemcollectorInput(e.key); }
+    else if (currentGame === 'runner') { if(typeof handleRunnerInput==='function') handleRunnerInput(e.key); }
+    else if (currentGame === 'simonsays') { if(typeof handleSimonsaysInput==='function') handleSimonsaysInput(e.key); }
+    else if (currentGame === 'streetracer') { if(typeof handleStreetracerInput==='function') handleStreetracerInput(e.key); }
+    else if (currentGame === 'trafficrun') { if(typeof handleTrafficrunInput==='function') handleTrafficrunInput(e.key); }
+    else if (currentGame === 'meteordodge') { if(typeof handleMeteordodgeInput==='function') handleMeteordodgeInput(e.key); }
+    else if (currentGame === 'sokoban') { if(typeof handleSokobanInput==='function') handleSokobanInput(e.key); }
+    else if (currentGame === 'whackamole') { if(typeof handleWhackamoleInput==='function') handleWhackamoleInput(e.key); }
+    else if (currentGame === 'archery') { if(typeof handleArcheryInput==='function') handleArcheryInput(e.key); }
+    else if (currentGame === 'memorymatch') { if(typeof handleMemorymatchInput==='function') handleMemorymatchInput(e.key); }
+    else if (currentGame === 'lumberjack') { if(typeof handleLumberjackInput==='function') handleLumberjackInput(e.key); }
+    else if (currentGame === 'spacepro') { if(typeof handleSpaceproInput==='function') handleSpaceproInput(e.key); }
+});
+
+// UI Bindings
+$$('.game-card').forEach(card => {
+    card.addEventListener('click', () => {
+        $$('.game-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        currentGame = card.dataset.game;
+        
+        ctx.fillStyle = '#12121e';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText(card.querySelector('.game-name').textContent, canvas.width / 2, canvas.height / 2 - 20);
+        ctx.font = '16px Inter';
+        ctx.fillStyle = '#888';
+        ctx.fillText('Press Start to play', canvas.width / 2, canvas.height / 2 + 20);
+        
+        updateStats();
+        gameState = STATES.MENU;
+    });
+});
+
+$('#startGameBtn').addEventListener('click', () => {
+    startGame();
+    canvas.focus();
+});
+
+$('#pauseGameBtn').addEventListener('click', () => {
+    if (gameState === STATES.PLAYING) {
+        gameState = STATES.PAUSED;
+        cancelAnimationFrame(animFrame);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 30px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+    } else if (gameState === STATES.PAUSED) {
+        gameState = STATES.PLAYING;
+        lastTime = performance.now();
+        animFrame = requestAnimationFrame(gameLoop);
+    }
+});
+
+// Mobile D-Pad
+$$('.dpad-btn').forEach(btn => {
+    btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const dir = btn.dataset.dir;
+        let key = '';
+        if(dir === 'up') key = 'ArrowUp';
+        if(dir === 'down') key = 'ArrowDown';
+        if(dir === 'left') key = 'ArrowLeft';
+        if(dir === 'right') key = 'ArrowRight';
+        
+        if (gameState === STATES.PLAYING) {
+            window.dispatchEvent(new KeyboardEvent('keydown', {'key': key}));
+        }
+    }, {passive: false});
+});
+
+// Initial screen setup
+if ($$('.game-card').length > 0) $$('.game-card')[0].click();
+
+if(typeof QU !== 'undefined') QU.init({ kofi: true, theme: true });
 })();
