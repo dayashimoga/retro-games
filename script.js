@@ -2143,70 +2143,7 @@ window.addEventListener('keydown', e => {
     else if (currentGame === 'spacepro') { if(typeof handleSpaceproInput==='function') handleSpaceproInput(e.key); }
 });
 
-// UI Bindings
-$$('.game-card').forEach(card => {
-    card.addEventListener('click', () => {
-        $$('.game-card').forEach(c => c.classList.remove('active'));
-        card.classList.add('active');
-        currentGame = card.dataset.game;
-        
-        ctx.fillStyle = '#12121e';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 24px Inter';
-        ctx.textAlign = 'center';
-        ctx.fillText(card.querySelector('.game-name').textContent, canvas.width / 2, canvas.height / 2 - 20);
-        ctx.font = '16px Inter';
-        ctx.fillStyle = '#888';
-        ctx.fillText('Press Start to play', canvas.width / 2, canvas.height / 2 + 20);
-        
-        updateStats();
-        gameState = STATES.MENU;
-    });
-});
-
-$('#startGameBtn').addEventListener('click', () => {
-    startGame();
-    canvas.focus();
-});
-
-$('#pauseGameBtn').addEventListener('click', () => {
-    if (gameState === STATES.PLAYING) {
-        gameState = STATES.PAUSED;
-        cancelAnimationFrame(animFrame);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 30px Inter';
-        ctx.textAlign = 'center';
-        ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
-    } else if (gameState === STATES.PAUSED) {
-        gameState = STATES.PLAYING;
-        lastTime = performance.now();
-        animFrame = requestAnimationFrame(gameLoop);
-    }
-});
-
-// Mobile D-Pad
-$$('.dpad-btn').forEach(btn => {
-    btn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const dir = btn.dataset.dir;
-        let key = '';
-        if(dir === 'up') key = 'ArrowUp';
-        if(dir === 'down') key = 'ArrowDown';
-        if(dir === 'left') key = 'ArrowLeft';
-        if(dir === 'right') key = 'ArrowRight';
-        
-        if (gameState === STATES.PLAYING) {
-            window.dispatchEvent(new KeyboardEvent('keydown', {'key': key}));
-        }
-    }, {passive: false});
-});
-
-// Initial screen setup
-if ($$('.game-card').length > 0) $$('.game-card')[0].click();
+// End of retro games
 
 if(typeof QU !== 'undefined') QU.init({ kofi: true, theme: true });
 })();
